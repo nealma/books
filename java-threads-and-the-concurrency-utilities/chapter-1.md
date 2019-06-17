@@ -18,3 +18,19 @@ GC就是典型的守护线程，主线程终止，所有守护线程全部终止
   * 主线程终止，所有守护线程都会终止
 ##### 1.1.2 启动线程
 
+#### 1.2  操作更高级的线程任务
+  * 中断
+  * 睡眠
+  * 加入到另一线程中join
+##### 1.2.1 中断线程
+  * interrupt()
+  * isInterrupt()
+  * interrupted()
+  * isInterrupted()
+  
+##### 1.2.1 等待线程
+  * join() 无限期的等待直至该线程死亡
+  * join(long millis) 该线程死亡之前最多等待millis毫秒，millis=0，无限期等待，同join(); millis<0,IllegalArgumentException被抛出
+  * interrupted(long millis, int nanos) nanos [0, 999999)
+  
+  
