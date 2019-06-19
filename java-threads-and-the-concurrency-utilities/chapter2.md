@@ -39,4 +39,17 @@ if(a == 10.0){//1
 
 2.1.2 数据竞争
 
-  数据竞争指的是两条或者两条以上的线程（在单个应用中）并发的访问同一块
+  数据竞争指的是两条或者两条以上的线程（在单个应用中）并发的访问同一块内存区域，同时至少有一条是为了写，而且这些线程没有协调对那块内存区域的访问。
+  当满足这些条件，访问顺序就是不确定的，每次运行产生不同的结果。
+  
+```
+ private static Parser parser;
+    
+    public static Parser getInstance(){
+        if( parser == null ){
+            parser = new Parser();
+        }
+        return parser;
+    }
+```
+假设线程1调用了getInstance()方法
