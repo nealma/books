@@ -52,4 +52,5 @@ if(a == 10.0){//1
         return parser;
     }
 ```
-假设线程1调用了getInstance()方法
+假设线程 1 调用了getInstance()方法。由于检测属性parser是空值，线程1实例化Parser并将引用赋值给变量parser。
+随后，当线程 2 调用getInstance()方法时，可能检测到
