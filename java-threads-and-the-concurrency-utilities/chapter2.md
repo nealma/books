@@ -53,4 +53,44 @@ if(a == 10.0){//1
     }
 ```
 假设线程 1 调用了getInstance()方法。由于检测属性parser是空值，线程1实例化Parser并将引用赋值给变量parser。
-随后，当线程 2 调用getInstance()方法时，可能检测到
+随后，当线程 2 调用getInstance()方法时，可能检测到parser非空，简单返回；还有可能检测到parser还是空值，于是又创建了一个新的Parser对象。
+由于线程 1 和 线程 2 读 parser 变量之间没有 happpen-before ordering（一个动作优先于另一个动作）的保证（这里不存在对parser访问顺序的协同），
+数据竞争便产生了。
+
+2.1.3 缓存变量
+ 
+ 为了提升性能，编译器Java虚拟机（JVM）以及操作系统会协调在寄存器中或者处理器缓存中缓存变量，而不是依赖主存。
+ 每条线程都会有其自己的变量拷贝。当线程写入这个变量的时候，其实是写入自己的拷贝；其他线程不太可能看到自己的变量拷贝发生更改。
+ 
+ ```
+ public class CacheVariableThread {
+
+    public static BigDecimal result = null;
+
+    public static BigDecimal compute(){
+        try {
+            Thread.sleep(3000);
+        } catch (InterruptedException e) { e.printStackTrace(); }
+        return new BigDecimal(10000);
+    }
+    public static void main(String[] args) {
+        Runnable r1 = () -> {
+            result = compute();
+        };
+
+        Thread t1 = new Thread(r1, "t1");
+        t1.start();
+
+        try {
+            t1.join();
+        }catch (InterruptedException e){
+            e.printStackTrace();
+        }
+
+        System.out.println("result [" + result +"]");
+    }
+}
+ ```
+ 类属性result示范了缓存变量的问题。该属性在lambda表达式上下文当中被一条工作线程访问并执行代码result = compute();然后默认主线程执行System.out.println("result [" + result +"]");
+ 
+ 
