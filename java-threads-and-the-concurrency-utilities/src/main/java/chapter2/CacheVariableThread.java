@@ -1,5 +1,7 @@
 package chapter2;
 
+import java.math.BigDecimal;
+
 /**
  * 缓存变量
  *
@@ -9,17 +11,17 @@ package chapter2;
  */
 public class CacheVariableThread {
 
-    public static Long result = null;
+    public static BigDecimal result = null;
 
-    public static void compute(){
+    public static BigDecimal compute(){
         try {
             Thread.sleep(3000);
         } catch (InterruptedException e) { e.printStackTrace(); }
-        result = 10000L;
+        return new BigDecimal(10000);
     }
     public static void main(String[] args) {
         Runnable r1 = () -> {
-            compute();
+            result = compute();
         };
 
         Thread t1 = new Thread(r1, "t1");
