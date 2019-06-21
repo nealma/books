@@ -168,3 +168,64 @@ if(a == 10.0){//1
 * 活锁 线程总是执行一个失败的操作，导致无法继续执行。
 
 * 饿死 线程一直被（调度器）延迟访问其赖以执行的资源。
+
+### 2.4 volatile 和 final 变量
+同步的两种属性：互斥性和可见性。
+synchronized与两者都有关；volatile只和可见性有关；
+
+* volatile
+```
+ // 类属性
+ private boolean stopped;
+```
+ 在单处理器/单核的机器上，没有任何问题；
+ 但是在多处理器/多核单处理器的机器上，可能看到不同的值，因为每个处理器或核心都可能有自己的一份stopped拷贝；
+ 当一条线程更改了自己的拷贝，其他线程的拷贝并没有被改变。
+ 
+ ```
+ // 类属性 修饰为 volatile
+ private volatile boolean stopped;
+```
+由于stopped已经标记为volatile，每条线程都会访问主存中该变量的拷贝而不会访问缓存中的拷贝。
+
+只有可见性导致问题时，才可以使用volatile。而且只能在雷属性声明处使用。
+可以将double、long类型的属性声明为volatile；
+避免在32位JVM中使用，原因是访问一个double或long型的变量值需要两步操作。
+
+* final
+
+final属性可以安全的访问
+```
+final class Fruit{
+    
+    private final Set<String> fruits =  new TreeSet<>();
+
+    public Fruit(){
+        fruits.add("Apple");
+        fruits.add("Pear");
+        fruits.add("Strawberry");
+    }
+    
+}
+```
+fruits声为final，这个属性的应用不能被更改，也不能被缓存，所以不存在数据不同步的情况。
+
+关于不可变性，Java提供了一种特殊的线程安全保证。即便没有用同步来发布（暴露）这些对象的引用，依然可以被多条线程安全的访问。
+
+* 不可变对象绝对不允许状态改变
+* 所有的属性必须声明为final
+* 对象必须被恰当的构造出来以防this引用脱离构造函数
+
+```
+/**
+ * this 脱离
+ */
+class ThisEscape {
+    private static ThisEscape lastCreatedInstance;
+
+    public ThisEscape() {
+        lastCreatedInstance = this;
+    }
+}
+```
+ 
