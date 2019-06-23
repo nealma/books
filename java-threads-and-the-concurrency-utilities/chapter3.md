@@ -131,10 +131,10 @@ class Producer extends Thread{
     @Override
     public void run() {
         for (char c = 'a'; c < 'z'; c++){
-            synchronized (s){ // 1
+            **synchronized (s){ // 1
                 s.setChar(c);
                 System.out.println(c + " -> created by producer.");
-            }
+            }**
         }
     }
 }
@@ -154,10 +154,10 @@ class Consumer extends Thread{
     public void run() {
         char c;
         do {
-            synchronized (s){ // 2
+            **synchronized (s){ // 2
                 c = s.getChar();
                 System.out.println(c + " -> used by consumer.");
-            }
+            }**
         } while (c != 'z');
     }
 }
