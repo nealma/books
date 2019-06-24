@@ -1,7 +1,7 @@
 package chapter4;
 
 /**
- * 线程组
+ * 线程组、线程异常处理
  *
  * @author neal.ma
  * @date 2019/6/23
@@ -10,6 +10,29 @@ package chapter4;
 public class ThreadGroupDemo {
 
     public static void main(String[] args) {
+
+        // thread group
+        Runnable r = () -> {
+            System.out.println("active count: " + Thread.activeCount());
+        };
+        ThreadGroup threadGroup = new ThreadGroup("group1");
+        Thread t1 = new Thread(threadGroup, r,"t1");
+        Thread t2 = new Thread(threadGroup, r,"t2");
+        Thread t3 = new Thread(threadGroup, r,"t3");
+
+        t1.start();
+        t2.start();
+        t3.start();
+
+        // 这些方法很有用，但是都被废弃，因为很容易诱发死锁等问题
+        threadGroup.suspend();
+        threadGroup.resume();
+        threadGroup.stop();
+
+        // 输出
+        // active count: 1
+        // active count: 3
+        // active count: 1
 
         // 1
         try{
@@ -71,7 +94,7 @@ public class ThreadGroupDemo {
     }
 }
 
-class UncaughtExceptionThread extends Thread{
+class UncaughtExceptionThread extends Thread {
     @Override
     public void run() {
         int x = 1 / 0;

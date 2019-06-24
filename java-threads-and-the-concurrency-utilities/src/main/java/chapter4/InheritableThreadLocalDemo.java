@@ -1,7 +1,7 @@
 package chapter4;
 
 /**
- * 父子线程之间传递数据
+ * 父线程传递给子线程数据
  *
  * @author neal.ma
  * @date 2019/6/23

@@ -15,6 +15,31 @@
   
   检查时间到使用时间（time_of_check_to_time_of_use）,该类场景存在缺陷。因为检查文件和操作期间，文件也可能被删除或创建。
   
+```
+    // thread group
+    Runnable r = () -> {
+        System.out.println("active count: " + Thread.activeCount());
+    };
+    ThreadGroup threadGroup = new ThreadGroup("group1");
+    Thread t1 = new Thread(threadGroup, r,"t1");
+    Thread t2 = new Thread(threadGroup, r,"t2");
+    Thread t3 = new Thread(threadGroup, r,"t3");
+
+    t1.start();
+    t2.start();
+    t3.start();
+
+    // 这些方法很有用，但是都被废弃，因为很容易诱发死锁等问题
+    threadGroup.suspend();
+    threadGroup.resume();
+    threadGroup.stop();
+
+    // 输出
+    // active count: 1
+    // active count: 3
+    // active count: 1
+```  
+  
   线程异常
   
 ```
@@ -149,9 +174,8 @@ class ThreadLocalThread extends Thread{
 那如果我们想要在父线程和子线程之间传递数据，该怎么处理呢？
 
 ```
-
 /**
- * 父子线程之间传递数据
+ * 父线程传递给子线程数据
  */
 public class InheritableThreadLocalDemo {
 
@@ -187,3 +211,107 @@ public class InheritableThreadLocalDemo {
 ```
 
 #### 4.3 定时器框架
+
+    Timer、TimerTask
+    Timer让你能够在一个后台线程中调度TimerTask用于后续执行（以顺序的方式），它也称为任务执行线程。
+    定时器任务可能会因为单次的执行或者规律性的重复执行而被调度。
+    
+    * 单次执行
+    * 周期重复执行
+    * 将来某一时刻执行 （如果是过去时间，则立即执行）
+    
+    Timer在内部，使用了一个二进制的堆表示其定时任务队列，是的时间复杂度为O(log n),n为并发调度时定时任务的数量。
+    
+    * Timer() 新建定时器，执行线程为非守护线程
+    * Timer(boolean isDaemon) 新建定时器，同时设置是否守护线程
+    * Timer(String name) 新建定时器，同时设置定时器名称
+    * Timer(String name，boolean isDaemon) 新建定时器，同时设置定时器名称和是否守护线程
+    
+    * void cancel(), 终止定时器。不会干涉当前正在执行的定时器任务，优雅的终止掉并不会再有任务被调度。
+    * int purge(), 从该定时器队列中移除所有取消的定时任务并且返回被移除任务的数目。
+    * void schedule(TimerTask task, Date time), 在某个时间点调度任务执行
+    * void schedule(TimerTask task, Date firstTime, long period), 调度任务于firstTime开始，以period秒固定时间间隔重复执行。
+    * void schedule(TimerTask task, long delay), 调度任务延迟delay秒执行
+    * void schedule(TimerTask task, long delay, long period), 调度任务延迟delay秒执行，之后以period秒固定时间间隔重复执行。
+    * void scheduleAtFixedRate(TimerTask task, Date firstTime, long period), 调度任务于firstTime开始，以period秒固定时间间隔重复执行。
+    * void scheduleAtFixedRate(TimerTask task, long delay, long period), 调度任务延迟delay秒执行，之后以period秒固定时间间隔重复执行。
+
+    TimerTask 
+    定时任务应该很快完成。如果一个定时任务花费了很长的时间完成，它就会霸占定时器的任务执行线程，推迟后续定时任务的执行。
+    这些后续的定时任务可能会集中在一个时间点，并且当这个侵入的定时任务最终完成，它们会接连快速的执行。
+    
+    * void cancel() 取消这个定时任务
+    * long scheduledExecutionTime() 最近一次被调度执行的时间
+```
+/**
+ * 定时器
+ */
+public class TimerAndTimeTask {
+
+    public static void main(String[] args) {
+
+        Timer timer = new Timer();
+        TimerTask task = new TimerTask() {
+            @Override
+            public void run() {
+                System.out.println(Thread.currentThread().getName() + " run at " + System.currentTimeMillis());
+                // 不设置，timer会一值执行
+//                System.exit(0);
+            }
+        };
+        // execute one-shot timer task after 2-second delay
+        timer.schedule(task, 2000);
+
+        TimerTask taskDelay = new TimerTask() {
+            @Override
+            public void run() {
+                System.out.println(Thread.currentThread().getName() + " run at " + System.currentTimeMillis());
+            }
+        };
+        // delay 2-second, repeat every 1-second
+        timer.schedule(taskDelay, 2000, 1000);
+
+        TimerTask taskFixed = new TimerTask() {
+            @Override
+            public void run() {
+                System.out.println(Thread.currentThread().getName() + " run at " + System.currentTimeMillis());
+                // 此定时任务最近被实际调度执行的时间
+                System.out.println(Thread.currentThread().getName() + " execute time: " + this.scheduledExecutionTime());
+            }
+        };
+        // delay 2-second, repeat every 1-second
+        timer.scheduleAtFixedRate(taskFixed, 2000, 1000);
+
+
+        TimerTask taskCancel = new TimerTask() {
+            @Override
+            public void run() {
+
+                System.out.println(Thread.currentThread().getName() + " cancel at " + System.currentTimeMillis());
+                // cancel
+                timer.cancel();
+            }
+        };
+        // 5 秒之后 取消定时任务
+        timer.schedule(taskCancel, new Date(System.currentTimeMillis() + 5000));
+
+        // 输出
+        // Timer-0 run at 1561338802370
+        // Timer-0 run at 1561338802371
+        // Timer-0 run at 1561338802371
+        // Timer-0 execute time: 1561338802365
+        // Timer-0 run at 1561338803370
+        // Timer-0 execute time: 1561338803365
+        // Timer-0 run at 1561338803371
+        // Timer-0 run at 1561338804370
+        // Timer-0 execute time: 1561338804365
+        // Timer-0 run at 1561338804372
+        // Timer-0 run at 1561338805369
+        // Timer-0 execute time: 1561338805365
+        // Timer-0 cancel at 1561338805369
+    }
+}
+
+```
+    
+    
