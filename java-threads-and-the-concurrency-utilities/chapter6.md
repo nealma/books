@@ -19,7 +19,6 @@ public class CountDownLatchThread {
 
     public static void main(String[] args) {
 
-
         CountDownLatch doneSignal = new CountDownLatch(THREAD_SIZE);
 
         Runnable runnable = () -> {
@@ -54,14 +53,152 @@ public class CountDownLatchThread {
 }
 ```  
 
-#### 5.2 探索 Executor
+#### 6.2 同步屏障 CyclicBarrier
   
-  并发工具类使用高级的Executor替代了底层的线程操作执行任务。
-  一个executor，它的类直接或间接实现了java.util.concurrent.Executor接口，解耦任务提交操作。
-  Executor声明了一个单独的void execute(Runnable runnable)方法，该方法会在将来的某个时间点执行这个名为runnable的可运行任务。
+  同步屏障允许一组线程彼此相互等待，直到抵达某个公共的屏障点。
+  因为该屏障在等待线程被释放之前可以重用，所以称它为可循环使用的屏障。
+  该同步器对于数量固定并且相互之间必须不时等待彼此的多线程应用。
+  
+  打个比方：有一个古墓，古墓的入口已经被封闭千年，需要集齐东南西北四大法器，同时拼在开门机关上，古墓才能被打开，同步屏障就是那道门。
+  
+  CyclicBarrier构造函数
+  * CyclicBarrier(int parties) 拥有共同执行目标的线程数目
+  * CyclicBarrier(int parties, Runnable barrierAction)  在parties条线程执行之前，执行BarrierAction中的run(),多用于更新共享变量。
+  
+  CyclicBarrier提供的方法
+  * int await() 强制调用线程一直等待直到所有的parties都已经在同步屏障上调用了await()方法。
+    当调用线程自己或其他等待线程被中断、有线程在等待中超时或者有线程在同步屏障之上调用reset()方法，该调用线程就会停止等待。
+  * int await(long timeout, TimeUnit unit) 除了让你指定调用线程愿意等待的时长之外，该方法等同于上面的方法。  
+  * int getNumberWaiting() 返回在当前同步屏障上等待的线程数目。
+  * int getParties() 返回需要跨越同步屏障的线程数目。
+  * boolean isBroken() 当一条或多条线程由于在同步屏障创建或在上次重置之后，中断或超时从而被打破同步屏障，或者因为一个异常导致barrier action失败时，返回true，否则返回false。
+  * void reset() 把同步屏障重置到其原始状态
 ```
-
-
-```
+    /**
+     * 同步屏障
+     */
+    public class CyclicBarrierThread {
     
+        public static void main(String[] args) {
+            // 1
+            CyclicBarrier barrier = new CyclicBarrier(2);
+            Runnable r = () -> {
+                try {
+                    System.out.println("waiting " + barrier.getNumberWaiting() + " / " + barrier.getParties());
+                    barrier.await();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } catch (BrokenBarrierException e) {
+                    e.printStackTrace();
+                }
+            };
+            new Thread(r).start();
+            new Thread(r).start();
     
+            // 输出
+            // waiting 0 / 2
+            // waiting 1 / 2
+            
+            // 2
+            CyclicBarrier cyclicBarrier = new CyclicBarrier(2, new Tomb());
+            Runnable runnable = () -> {
+                try {
+                    System.out.println("waiting " + cyclicBarrier.getNumberWaiting() + " / " + cyclicBarrier.getParties());
+                    cyclicBarrier.await();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } catch (BrokenBarrierException e) {
+                    e.printStackTrace();
+                }
+            };
+            new Thread(runnable).start();
+            new Thread(runnable).start();
+    
+            // 输出
+            // waiting 0 / 2
+            // waiting 1 / 2
+            // open the door.
+        }
+    }
+    
+    class Tomb implements Runnable {
+        @Override
+        public void run() {
+            System.out.println("open the door.");
+        }
+    }
+  ```
+  CyclicBarrier与CountDownLatch区别是，CyclicBarrier可以重复使用；
+  
+  ```
+    new Thread(runnable).start();
+    new Thread(runnable).start();
+    new Thread(runnable).start();
+    new Thread(runnable).start();
+    new Thread(runnable).start();
+    new Thread(runnable).start();
+    
+    // 重复使用 输出
+    // Thread-4 waiting 0 / 2
+    // Thread-5 waiting 1 / 2
+    // Thread-5 open the door.
+    // Thread-6 waiting 0 / 2
+    // Thread-7 waiting 1 / 2
+    // Thread-7 open the door.
+    // Thread-8 waiting 0 / 2
+    // Thread-9 waiting 1 / 2
+    // Thread-9 open the door.
+  ```
+#### 6.3 交换器 Exchanger
+
+    交换器提供了一个线程彼此之间能够交换对象的同步点。 
+    
+    * V exchange(V x) 在这个交互点上，等待其他线程的到达，之后将所给对象传入其中，接收其他线程的对象作为返回。
+    * V exchange(V x, long timeout, TimeUnit unit) 除指定线程愿意等待的时长之外，功能同上。
+ ```
+/**
+ * 交换器
+ */
+public class ExchangerThread {
+
+    public static void main(String[] args) {
+
+        final Exchanger<String> exchanger = new Exchanger<>();
+        final List<String> shared = new ArrayList<>();
+
+        Runnable r = () -> {
+            try {
+                while (true){
+                    String name = Thread.currentThread().getName();
+//                    String exchangeData = exchanger.exchange(name);
+                    String exchangeData = exchanger.exchange(name, 1, TimeUnit.SECONDS);
+                    System.out.println(name + " " + exchangeData);
+                }
+
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (TimeoutException e) {
+                e.printStackTrace();
+            }
+        };
+
+        new Thread(r).start();
+        new Thread(r).start();
+        new Thread(r).start();
+        
+        // 输出
+        // Thread-1 Thread-0
+        // Thread-1 Thread-2
+        // Thread-0 Thread-2
+        // Thread-0 Thread-1
+        // Thread-2 Thread-1
+        // Thread-2 Thread-0
+        // Thread-1 Thread-0
+        // Thread-1 Thread-2
+    }
+}   
+ ```
+ 
+ #### 6.4 信号量
+ 
+ 

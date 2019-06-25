@@ -21,4 +21,13 @@
         <jaxb.version>2.3.0</jaxb.version>
         <spring.boot.admin.version>2.0.2</spring.boot.admin.version>
     </properties>
+    <dependencies>
+        <!--lombok -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.16.22</version>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
 </project>
