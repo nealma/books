@@ -11,6 +11,48 @@ Java提供了synchronized关键字对临界区进行线程同步访问，我们�
   * void await(long timeout, TimeUnit unit) 除非线程被中断，否则强制调用线程一直等到计数器递减至0,或以unit为单位的timeout超时
   * void countDown() 递减计数，当降至0时，释放所有等待线程。
   * long getCount() 返回当前计数
+  
+```
+public class CountDownLatchThread {
+
+    private static final int THREAD_SIZE = 3;
+
+    public static void main(String[] args) {
+
+
+        CountDownLatch doneSignal = new CountDownLatch(THREAD_SIZE);
+
+        Runnable runnable = () -> {
+            try {
+                Thread.sleep(new Random().nextInt(1000));
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            System.out.println(Thread.currentThread().getName() + " starting, count " + doneSignal.getCount());
+            doneSignal.countDown();
+            System.out.println(Thread.currentThread().getName() + " done, count " + doneSignal.getCount());
+        };
+
+        ExecutorService executorService = Executors.newFixedThreadPool(THREAD_SIZE);
+
+        int count = 0;
+        while(3 > count){
+            executorService.execute(runnable);
+            count++;
+        }
+
+        try {
+            doneSignal.await();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        executorService.shutdown();
+
+        System.out.println("main thread done.");
+    }
+}
+```  
 
 #### 5.2 探索 Executor
   
