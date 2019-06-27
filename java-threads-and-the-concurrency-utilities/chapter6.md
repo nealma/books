@@ -290,40 +290,67 @@ public class SemaphoreThread {
     * int arriveAndDeregister() 抵达此Phaser，同时从中注销而不会等待其他线程到达，由此减少未来phase上需要前进的线程数量。
     
 ```
+
 /**
- * 信号量
+ * Phaser
  */
-public class SemaphoreThread {
+public class PhaserThread {
 
     public static void main(String[] args) {
-        final Semaphore semaphore = new Semaphore(10);
+
+        final Phaser phaser = new Phaser();
+
         Runnable r = () -> {
             try {
-                semaphore.acquire();
+                System.out.println(Thread.currentThread().getName() + " at " + System.currentTimeMillis() + " phase: " + phaser.arriveAndAwaitAdvance());
                 Thread.sleep(new Random().nextInt(1000));
-                System.out.println(Thread.currentThread().getName() + " handle " + semaphore.getQueueLength());
-
             } catch (InterruptedException e) {
                 e.printStackTrace();
-            }finally {
-                semaphore.release();
             }
         };
 
-        for (int i=0; i<100; i++){
+        for (int i=0; i<10; i++){
+            System.out.println(phaser.register());
+
+        }
+        for (int i=0; i<10; i++){
             new Thread(r).start();
+            System.out.println("parties: " + phaser.getRegisteredParties() + ", phase: " + phaser.getPhase());
         }
 
+        // 等待所有参与者都执行完，注销该phaser
+        phaser.arriveAndDeregister();
+
         // 输出
-        // Thread-1 handle
-        // Thread-2 handle
-        // Thread-9 handle
-        // Thread-11 handle
-        // Thread-8 handle
-        // Thread-7 handle
-        // Thread-5 handle
-        // Thread-12 handle
-        // ......
+        // 0
+        // 0
+        // 0
+        // 0
+        // 0
+        // 0
+        // 0
+        // 0
+        // 0
+        // 0
+        // parties: 10, phase: 0
+        // parties: 10, phase: 0
+        // parties: 10, phase: 0
+        // parties: 10, phase: 0
+        // parties: 10, phase: 0
+        // parties: 10, phase: 0
+        // parties: 10, phase: 0
+        // parties: 10, phase: 0
+        // parties: 10, phase: 0
+        // parties: 10, phase: 0
+        // Thread-7 at 1561593950111 phase: 1
+        // Thread-2 at 1561593950110 phase: 1
+        // Thread-3 at 1561593950110 phase: 1
+        // Thread-4 at 1561593950110 phase: 1
+        // Thread-6 at 1561593950111 phase: 1
+        // Thread-8 at 1561593950111 phase: 1
+        // Thread-5 at 1561593950111 phase: 1
+        // Thread-1 at 1561593950108 phase: 1
+        // Thread-0 at 1561593950106 phase: 1
     }
 }
 ```    
