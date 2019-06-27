@@ -199,6 +199,134 @@ public class ExchangerThread {
 }   
  ```
  
- #### 6.4 信号量
+#### 6.4 信号量
  
+   信号量维护了一组许可证（permit），以约束访问被限制资源的线程数。
+   当没有可用的许可证时，线程的获取尝试会一直阻塞，知道其他线程释放一个许可证。
+   * 计数信号量 当前的值可以被递增 1
+   * 二进制或互斥信号量 当前的值只能是 0 和 1
+
+   构造函数
+   * Semaphore(int permits) 指定许可证数量，默认设置成不公平策略
+   * Semaphore(int permits, boolean fair) 指定许可证数量和公平策略
+   
+#### 6.5 信号量和公平策略
+
+    当公平策略设置成false，信号量不会保证线程获取信号量的顺序（抢占式的）。
+    即便线程已经在等待，调用了acquire()方法的新线程还是能先于这条线程被分配许可证。
+    逻辑上，新线程把自己放到了等待线程队列的队首了。当公平策略设置为true，
+    信号量就能保证调用acquire()方法的任意线程能按照方法被调用处理的顺序获取许可证（先进先出，FIFO）。
+    不限时tryAcquire()方法不会遵循公平策略的设定。
+    
+    一般来讲，信号量通常用来控制资源访问，它应当初始化成公平的，从而保证不会有任何线程在访问资源时饿死。
+    
+    * void acquire() 从信号量中获取一个许可证，否则阻塞，直到有一个许可证可用或者调用线程被中断。
+    * void acquire(int permits) 从信号量中获取permits个许可证，否则阻塞，直到有一个许可证可用或者调用线程被中断。
+    * void acquireUninterruptibly() 从信号量中获取一个许可证，否则阻塞，直到有一个许可证可用。
+    * void acquireUninterruptibly(int permits) 从信号量中获取permits个许可证，否则阻塞，直到有一个许可证可用。
+    * int availablePermits() 返回当前可用许可证数量
+    * int drainPermits() 获取并返回立即可用许可证数量
+    * int getQueueLength() 返回等待获取许可证的大致线程数
+    * boolean hasQueueThreads() 查询是否存在等待获取许可证的线程
+    * boolean isFair() 返回公平性设置
+    * void release() 释放一个许可证
+    * void release(int permits) 释放permits个许可证
+    * boolean tryAcquire() 仅当调用时有一个许可证可用的情况，才能从这个信号量中获取这个信号
+    * boolean tryAcquire(int permits) 仅当调用时有permits个许可证可用的情况，才能从这个信号量中获取这些个信号
+    * boolean tryAcquire(int permits, long timeout, TimeUnit unit) 仅增加超时，其他同上
+    * boolean tryAcquire(long timeout, TimeUnit unit) 调用线程会一直等待直到有一个许可证可用。
+```
+/**
+ * 信号量
+ */
+public class SemaphoreThread {
+
+    public static void main(String[] args) {
+        final Semaphore semaphore = new Semaphore(10);
+        Runnable r = () -> {
+            try {
+                semaphore.acquire();
+                Thread.sleep(new Random().nextInt(1000));
+                System.out.println(Thread.currentThread().getName() + " handle " + semaphore.getQueueLength());
+
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }finally {
+                semaphore.release();
+            }
+        };
+
+        for (int i=0; i<100; i++){
+            new Thread(r).start();
+        }
+
+        // 输出
+        // Thread-1 handle
+        // Thread-2 handle
+        // Thread-9 handle
+        // Thread-11 handle
+        // Thread-8 handle
+        // Thread-7 handle
+        // Thread-5 handle
+        // Thread-12 handle
+        // ......
+    }
+}
+```    
+  
+#### 6.6 Phaser
+
+    Phaser 是一个更加弹性的同步屏障。
+    一个 Phaser 是的一组线程在屏障上等待，在最后一条线程到达之后，这些线程得以继续执行。
+    Phaser也提供Barrier Action的等价操作。一个Phaser可以协调不定数目的线程。这些线程可以在任何时候注册。
+    
+    parties 参与者
+    phase 阶段
+    arrive 抵达
+    advance 进阶
+        
+    * int register() 往这个Phaser中添加一条尚未抵达的线程，同时返回phase值作抵达分类用，这个值称为抵达phase值。
+    * int arriveAndAwaitAdvance() 记录到达并等待Phaser前进，返回抵达phase值。
+    * int arriveAndDeregister() 抵达此Phaser，同时从中注销而不会等待其他线程到达，由此减少未来phase上需要前进的线程数量。
+    
+```
+/**
+ * 信号量
+ */
+public class SemaphoreThread {
+
+    public static void main(String[] args) {
+        final Semaphore semaphore = new Semaphore(10);
+        Runnable r = () -> {
+            try {
+                semaphore.acquire();
+                Thread.sleep(new Random().nextInt(1000));
+                System.out.println(Thread.currentThread().getName() + " handle " + semaphore.getQueueLength());
+
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }finally {
+                semaphore.release();
+            }
+        };
+
+        for (int i=0; i<100; i++){
+            new Thread(r).start();
+        }
+
+        // 输出
+        // Thread-1 handle
+        // Thread-2 handle
+        // Thread-9 handle
+        // Thread-11 handle
+        // Thread-8 handle
+        // Thread-7 handle
+        // Thread-5 handle
+        // Thread-12 handle
+        // ......
+    }
+}
+```    
+
+    
  
