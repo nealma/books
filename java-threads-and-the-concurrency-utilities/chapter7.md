@@ -18,7 +18,7 @@
     
     Java 锁框架包含了经常使用的锁、重入锁、条件、读写锁以及重入读写锁等，还有Java 8引入的StampedLock类。
     
-### 7.1 锁
+### 7.1 锁 Lock
 
   接口 Lock 提供了比监听器关联的锁更为弹性的锁操作。例如，当锁不可用时，可以立即退出对一个锁的请求。
   * void lock() 获取锁。当锁不可用时，调用线程会被强制一直等待直到锁可用。
@@ -43,7 +43,7 @@
     }
 ```  
 
-#### 7.2 重入锁
+#### 7.2 重入锁 ReentrantLock
   
   类 ReentrantLock 实现了接口 Lock，描述了一个可重入的互斥锁。这个锁和一个持有量相关联。
   当一条线程持有这个锁并且调用lock()、lockUninteruptibly()或者任意一个tryLock()方法重新获得锁，这个持有量就递增 1 ，
@@ -193,161 +193,99 @@ public class ConditionThread {
 } 
  ```
  
-#### 6.4 信号量
+#### 7.4 读写锁 ReadWriteLock
  
-   信号量维护了一组许可证（permit），以约束访问被限制资源的线程数。
-   当没有可用的许可证时，线程的获取尝试会一直阻塞，知道其他线程释放一个许可证。
-   * 计数信号量 当前的值可以被递增 1
-   * 二进制或互斥信号量 当前的值只能是 0 和 1
+   读写锁适用于对数据结构频繁读而较少修改的场景。
+   读写锁（ReadWriteLock）机制，在读取时有较高的并发性，而写入时保证安全的互斥访问。
+   读写锁维护了一对锁：一个锁针对只读操作，一个锁针对写操作。在没有写操作的时候，读锁可能会被多条读线程同时持有；
+   写入锁是互斥的：只有单个线程可以修改共享数据。
 
-   构造函数
-   * Semaphore(int permits) 指定许可证数量，默认设置成不公平策略
-   * Semaphore(int permits, boolean fair) 指定许可证数量和公平策略
+   部分方法
+   * Lock readLock() 返回读锁
+   * Lock writeLock() 返回写锁
    
-#### 6.5 信号量和公平策略
+#### 7.5 重入读写锁 ReentrantReadWriteLock
 
-    当公平策略设置成false，信号量不会保证线程获取信号量的顺序（抢占式的）。
-    即便线程已经在等待，调用了acquire()方法的新线程还是能先于这条线程被分配许可证。
-    逻辑上，新线程把自己放到了等待线程队列的队首了。当公平策略设置为true，
-    信号量就能保证调用acquire()方法的任意线程能按照方法被调用处理的顺序获取许可证（先进先出，FIFO）。
-    不限时tryAcquire()方法不会遵循公平策略的设定。
+    类ReentrantReadWriteLock实现了接口ReadWriteLock，代表与ReentrantLock具有相同语义的重入读-写锁
     
-    一般来讲，信号量通常用来控制资源访问，它应当初始化成公平的，从而保证不会有任何线程在访问资源时饿死。
-    
-    * void acquire() 从信号量中获取一个许可证，否则阻塞，直到有一个许可证可用或者调用线程被中断。
-    * void acquire(int permits) 从信号量中获取permits个许可证，否则阻塞，直到有一个许可证可用或者调用线程被中断。
-    * void acquireUninterruptibly() 从信号量中获取一个许可证，否则阻塞，直到有一个许可证可用。
-    * void acquireUninterruptibly(int permits) 从信号量中获取permits个许可证，否则阻塞，直到有一个许可证可用。
-    * int availablePermits() 返回当前可用许可证数量
-    * int drainPermits() 获取并返回立即可用许可证数量
-    * int getQueueLength() 返回等待获取许可证的大致线程数
-    * boolean hasQueueThreads() 查询是否存在等待获取许可证的线程
-    * boolean isFair() 返回公平性设置
-    * void release() 释放一个许可证
-    * void release(int permits) 释放permits个许可证
-    * boolean tryAcquire() 仅当调用时有一个许可证可用的情况，才能从这个信号量中获取这个信号
-    * boolean tryAcquire(int permits) 仅当调用时有permits个许可证可用的情况，才能从这个信号量中获取这些个信号
-    * boolean tryAcquire(int permits, long timeout, TimeUnit unit) 仅增加超时，其他同上
-    * boolean tryAcquire(long timeout, TimeUnit unit) 调用线程会一直等待直到有一个许可证可用。
+    ReentrantReadWriteLock 构造函数
+  * ReentrantReadWriteLock() 等价于 ReentrantReadWriteLock(false)
+  * ReentrantReadWriteLock(boolean fair)  fair 控制是否要使用公平的排序策略；
+  
+  基于公平的顺序策略，若当前持有的锁被释放了，那要么是等待最久的单条写线程会被分配血锁，
+  要么就是当一组读线程比所有等待中的写线程等待时间还长时，这组读线程会被分配读锁。
+  
+  ReentrantReadWriteLock 方法
+  * ReentrantReadWriteLock.ReadLock readLock() 返回用于读锁
+  * ReentrantReadWriteLock.writeLock writeLock() 返回用于写锁
+  * int getReadHoldCount() 返回被调用线程在这个锁上持有读锁的数量
+  * int getWriteHoldCount() 返回被调用线程在这个锁上持有写锁的数量
 ```
 /**
- * 信号量
+ * 重入读写锁
  */
-public class SemaphoreThread {
+public class ReentrantReadWriteLockThread {
 
     public static void main(String[] args) {
-        final Semaphore semaphore = new Semaphore(10);
-        Runnable r = () -> {
-            try {
-                semaphore.acquire();
-                Thread.sleep(new Random().nextInt(1000));
-                System.out.println(Thread.currentThread().getName() + " handle " + semaphore.getQueueLength());
 
+        final ReentrantReadWriteLock lock = new ReentrantReadWriteLock(true);
+        final Lock rLock = lock.readLock();
+        final Lock wLock = lock.writeLock();
+
+
+        Runnable reader = () -> {
+            rLock.lock();
+            try {
+                System.out.println(Thread.currentThread().getName() + " at " + System.currentTimeMillis() + " hold: " + lock.getReadHoldCount());
+                Thread.sleep(new Random().nextInt(1000));
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }finally {
-                semaphore.release();
+                rLock.unlock();
             }
         };
 
-        for (int i=0; i<100; i++){
-            new Thread(r).start();
-        }
-
-        // 输出
-        // Thread-1 handle
-        // Thread-2 handle
-        // Thread-9 handle
-        // Thread-11 handle
-        // Thread-8 handle
-        // Thread-7 handle
-        // Thread-5 handle
-        // Thread-12 handle
-        // ......
-    }
-}
-```    
-  
-#### 6.6 Phaser
-
-    Phaser 是一个更加弹性的同步屏障。
-    一个 Phaser 是的一组线程在屏障上等待，在最后一条线程到达之后，这些线程得以继续执行。
-    Phaser也提供Barrier Action的等价操作。一个Phaser可以协调不定数目的线程。这些线程可以在任何时候注册。
-    
-    parties 参与者
-    phase 阶段
-    arrive 抵达
-    advance 进阶
-        
-    * int register() 往这个Phaser中添加一条尚未抵达的线程，同时返回phase值作抵达分类用，这个值称为抵达phase值。
-    * int arriveAndAwaitAdvance() 记录到达并等待Phaser前进，返回抵达phase值。
-    * int arriveAndDeregister() 抵达此Phaser，同时从中注销而不会等待其他线程到达，由此减少未来phase上需要前进的线程数量。
-    
-```
-
-/**
- * Phaser
- */
-public class PhaserThread {
-
-    public static void main(String[] args) {
-
-        final Phaser phaser = new Phaser();
-
-        Runnable r = () -> {
+        Runnable writer = () -> {
+            wLock.lock();
             try {
-                System.out.println(Thread.currentThread().getName() + " at " + System.currentTimeMillis() + " phase: " + phaser.arriveAndAwaitAdvance());
+                System.out.println(Thread.currentThread().getName() + " at " + System.currentTimeMillis() + " hold: " + lock.getWriteHoldCount());
                 Thread.sleep(new Random().nextInt(1000));
             } catch (InterruptedException e) {
                 e.printStackTrace();
+            }finally {
+                wLock.unlock();
             }
         };
 
+        ExecutorService executorService = Executors.newFixedThreadPool(2);
         for (int i=0; i<10; i++){
-            System.out.println(phaser.register());
-
-        }
-        for (int i=0; i<10; i++){
-            new Thread(r).start();
-            System.out.println("parties: " + phaser.getRegisteredParties() + ", phase: " + phaser.getPhase());
+            executorService.execute(reader);
+            executorService.execute(writer);
         }
 
-        // 等待所有参与者都执行完，注销该phaser
-        phaser.arriveAndDeregister();
+        executorService.shutdown();
 
         // 输出
-        // 0
-        // 0
-        // 0
-        // 0
-        // 0
-        // 0
-        // 0
-        // 0
-        // 0
-        // 0
-        // parties: 10, phase: 0
-        // parties: 10, phase: 0
-        // parties: 10, phase: 0
-        // parties: 10, phase: 0
-        // parties: 10, phase: 0
-        // parties: 10, phase: 0
-        // parties: 10, phase: 0
-        // parties: 10, phase: 0
-        // parties: 10, phase: 0
-        // parties: 10, phase: 0
-        // Thread-7 at 1561593950111 phase: 1
-        // Thread-2 at 1561593950110 phase: 1
-        // Thread-3 at 1561593950110 phase: 1
-        // Thread-4 at 1561593950110 phase: 1
-        // Thread-6 at 1561593950111 phase: 1
-        // Thread-8 at 1561593950111 phase: 1
-        // Thread-5 at 1561593950111 phase: 1
-        // Thread-1 at 1561593950108 phase: 1
-        // Thread-0 at 1561593950106 phase: 1
+        // pool-1-thread-1 at 1561684047226 hold: 1
+        // pool-1-thread-2 at 1561684047961 hold: 1
+        // pool-1-thread-1 at 1561684048452 hold: 1
+        // pool-1-thread-2 at 1561684049256 hold: 1
+        // pool-1-thread-1 at 1561684050030 hold: 1
+        // pool-1-thread-2 at 1561684050444 hold: 1
+        // pool-1-thread-1 at 1561684051120 hold: 1
+        // pool-1-thread-2 at 1561684051584 hold: 1
+        // pool-1-thread-1 at 1561684051676 hold: 1
+        // pool-1-thread-2 at 1561684052545 hold: 1
+        // pool-1-thread-1 at 1561684053545 hold: 1
+        // pool-1-thread-2 at 1561684054036 hold: 1
+        // pool-1-thread-1 at 1561684054309 hold: 1
+        // pool-1-thread-2 at 1561684054920 hold: 1
+        // pool-1-thread-1 at 1561684055627 hold: 1
+        // pool-1-thread-2 at 1561684055920 hold: 1
+        // pool-1-thread-1 at 1561684056228 hold: 1
+        // pool-1-thread-2 at 1561684057170 hold: 1
+        // pool-1-thread-1 at 1561684057395 hold: 1
+        // pool-1-thread-2 at 1561684057530 hold: 1
     }
 }
-```    
-
-    
- 
+```
