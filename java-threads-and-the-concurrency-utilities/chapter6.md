@@ -1,7 +1,7 @@
 ## 6 同步器
 
 Java提供了synchronized关键字对临界区进行线程同步访问，我们也知道通过synchronized很难写出正确的同步代码，于是并发工具类提供了更高级的同步器。
-倒计时门闩count down latch，同步屏障cyclic barrier，交换器exchanger，信号量semaphone 和 phaser同步器
+倒计时门闩count down latch，同步屏障cyclic barrier，交换器exchanger，信号量semaphore 和 phaser同步器
 ### 6.1 倒计时门闩CountDownLatch
 
   倒计时门闩会导致一条或多条线程在"门口"一直等待，直到一条线程打开这扇门，线程得以继续运行。
