@@ -1,107 +1,184 @@
-## 7 锁框架
+## 8 额外的并发工具类
 
-    Java提供了 java.util.concurrent.locks 包，包含多种接口和类，针对条件进行加锁和等待。
-    不同于对象的内置加锁同步以及 java.lang.Object 的等待/通知机制，包含锁框架的并发工具类通过轮训锁、限时等待及其他方式改善了这种机制。
-    **同步及低级别的锁**
-    Java支持同步以便线程能够安全的更新共享变量并且保证一条线程的更新对其他线程的可见。
-    你可以给方法或者代码块标记上synchronized关键字已达到同步的目的。这样的代码块被称为"临界区"。
-    JVM 通过JVM 指令 monitors、monitorenter 以及 monitorexit 来支持同步
+    前面课程介绍了并发框架，Executor（Callable 和 Future），同步器，以及锁框架。
+    下面我们介绍并发结合、原子变量、Fork/Join 框架，Completion Service。
     
-    每一个Java对象都和一个监听器关联，监听器是一个互斥（每次只允许一个线程进入临界区中执行）构造，
-    他阻止多条线程同时在临界区中并发执行。在线程可以进入临界区之前，它需要锁住监听器。
-    如果这个监听器已经上锁，在监听器释放之前这条线程会一直阻塞（因为其他线程正在使用临界区）。
-    
-    当线程在多核、多处理器的环境中锁住一个监听器，存储在主存中的共享变量的值会被读取到对应的拷贝中，
-    然后存储在线程的工作内存（称为本地内存或者缓存）。这一动作能够保证该线程使用这些变量最近的值并且不会污染这些值，我们称为"可见性"。
-    线程会持续使用这些共享变量的拷贝。当离开临界区，线程会释放监听器，这些共享变量的值就会被写回到主存，
-    以确保下一条线程进入临界区也能访问这些共享变量最近的值（volatile 仅仅解决了可见性）
-    
-    Java 锁框架包含了经常使用的锁、重入锁、条件、读写锁以及重入读写锁等，还有Java 8引入的StampedLock类。
-    
-### 7.1 锁 Lock
+### 8.1 并发集合
 
-  接口 Lock 提供了比监听器关联的锁更为弹性的锁操作。例如，当锁不可用时，可以立即退出对一个锁的请求。
-  * void lock() 获取锁。当锁不可用时，调用线程会被强制一直等待直到锁可用。
-  * void lockInterruptibly() 除非调用线程被中断，否则获得锁。当锁不可用时，调用线程被强制一直等待，直到锁可用或线程中断。
-  * Condition newCondition() 返回一个新的绑定到当前锁实例之上的 Condition 实例。
-  * boolean tryLock() 在该方法被调用时，锁可用则获得锁。当获得锁之后，返回 true；否则返回 false。
-  * boolean tryLock(long timeout, TimeUnit unit) 在该方法被调用时，在指定等待时间内锁可用并且线程没有被中断则获得锁。当获得锁之后，返回 true；否则返回 false。
-  * void unlock() 释放锁
+  Java的结合框架提供了位于java.util包下的诸多接口和类。其中接口包括了List、Set 和 Map。类包括 ArrayList、TreeMap 和 HashMap。
+  ArrayList、TreeMap 和 HashMap 以及实现类这些接口的类都不是线程安全的。不过你可以使用类java.util.Collections中的同步包装方法
+  让他们变得安全。举个栗子，可以向Collections.synchronizedList()中传入一个ArrayList实例，已获得一个线程安全的ArrayList。
   
-  块状锁：隐式监听器，当获得多个锁，则以相反的顺序自动释放锁
-  Lock锁：获取和释放锁按照下面约定俗成,以保障获取到的锁总会被释放
+  线程安全的集合存在的问题：
+  * 在遍历一个集合之前，获取锁是很有必要的。集合很可能在遍历过程当中被其他线程修改。当集合在遍历过程中被修改时，快速失败迭代器会抛出ConcurrentModificationException异常
+  * 同步的集合经常被多条线程频繁的访问，性能存在瓶颈，最终影响影应用程序的扩展能力。
   
+  那怎么办呢？使用并发工具类
+  
+  并发工具类使用并发集合来应对这些问题，并发集合具有并发性能和高扩展行、面向集合的类型，他们存储在java.util.concurrent 包中，面向结合的类返回了弱一致性的迭代器
+  
+  弱一致性迭代器具有的属性
+  * 迭代开始之后，被删除但还没有通过迭代器的 next() 方法被返回的元素，就不会再被返回了。
+  * 迭代开始之后被添加的元素可能会返回也可能不会返回。
+  * 在集合迭代的过程中，即便对集合做了改变，也没有任何元素会被返回超过一次。
+  
+  部分并发集合类
+  * BlockingQueue 是接口 java.util.Queue 的子接口，它支持阻塞操作，即在获取一个元素之前，等待队列成为非空；
+    在存储一个元素之前，等待队列中的空间变为可用。
+    其实现类包括：ArrayBlockingQueue、DelayQueue、LinkedBlockingQueue、PriorityBlockingQueue 以及 SynchronousQueue。
+                类 LinkedBlockingDeque 和 LinkedTransferQueue 通过实现 BlockingQueue 的子接口间接的实现这个接口。
+  * ConcurrentMap 是 java.util.map 的子接口，声明了额外的原子的方法 putIfAbsent()、remove() 和 replace。你可以把它当做 java.util.HashMap 的并发版本。
+    类 ConcurrentNavigableMap 和 ConcurrentSkipListMap 都实现了这个接口。
+    
+#### 8.1.1  BlockingQueue 和 ArrayBlockingQueue
+
+    前面我们通过wait() 和 notify（）实现了生产者-消费者应用, 有了 BlockingQueue 其实代码可以更简单。
+    
 ```
-    Lock l = ...;
-    l.lock();
-    try{
-        // to do something
-    }catch(Exception e){
-        // handle error
-    }finally{
-        l.unlock();
-    }
-```  
-
-#### 7.2 重入锁 ReentrantLock
-  
-  类 ReentrantLock 实现了接口 Lock，描述了一个可重入的互斥锁。这个锁和一个持有量相关联。
-  当一条线程持有这个锁并且调用lock()、lockUninteruptibly()或者任意一个tryLock()方法重新获得锁，这个持有量就递增 1 ，
-  当线程调用unLock()方式，这个持有量就递减 1 。当持有量为 0 ，锁就会被释放掉。
-  
-  当很多线程尝试获取共享资源时，JVM 会花费更少的时间来**调度**这些线程，把更多时间投入到**执行**。
-  
-  ReentrantLock 构造函数
-  * ReentrantLock() 等价于ReentrantLock(false)
-  * ReentrantLock(boolean fair)  fair 控制是否要使用公平的排序策略；为 true 时，在争用的情况下，这个锁倾向于将访问权限分配给等待最久的线程。
-  
-  ReentrantLock 方法
-  * boolean isFair() 返回 公平策略
-  * boolean isHeldByCurrentThread() 锁是否被当前线程锁持有
-```
-    
 /**
- * 重入锁
+ * 阻塞队列
  */
-public class ReentrantLockThread {
-
+public class BlockingQueueThread {
+    private volatile static boolean shared = false;
     public static void main(String[] args) {
 
-        final Lock lock = new ReentrantLock();
-
-        Runnable r = () -> {
-            lock.lock();
-            try {
-                System.out.println(Thread.currentThread().getName() + " at " + System.currentTimeMillis() + " hold: " + ((ReentrantLock) lock).isHeldByCurrentThread());
-                Thread.sleep(new Random().nextInt(1000));
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }finally {
-                lock.unlock();
+        final BlockingQueue<Character> characters = new ArrayBlockingQueue(26);
+        Runnable producer = () -> {
+            for (char c='a'; c < 'z'; c++){
+                try {
+                    // 如果队列满了，put() 方被阻塞
+                    characters.put(c);
+                    System.out.println(Thread.currentThread().getName() + " [producer] at " + System.currentTimeMillis() + " create : " + c);
+                    Thread.sleep(new Random().nextInt(1000));
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
         };
 
         ExecutorService executorService = Executors.newFixedThreadPool(2);
-        for (int i=0; i<10; i++){
-            executorService.execute(r);
-        }
+        executorService.execute(producer);
 
-        executorService.shutdown();
-        
+        Runnable consumer = () -> {
+            try {
+                char c;
+                do {
+                    // 如果队列空了，take() 方被阻塞
+                    c = characters.take();
+                    System.out.println(Thread.currentThread().getName() + " [consumer] at " + System.currentTimeMillis() + " create: " + c);
+                    Thread.sleep(new Random().nextInt(1000));
+                } while (c != 'z');
+                executorService.shutdown();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        };
+        executorService.execute(consumer);
+
         // 输出
-        // pool-1-thread-1 at 1561676957938 hold: true
-        // pool-1-thread-2 at 1561676958050 hold: true
-        // pool-1-thread-1 at 1561676958122 hold: true
-        // pool-1-thread-2 at 1561676959057 hold: true
-        // pool-1-thread-1 at 1561676959511 hold: true
-        // pool-1-thread-1 at 1561676960184 hold: true
-        // pool-1-thread-2 at 1561676960933 hold: true
-        // pool-1-thread-1 at 1561676961804 hold: true
-        // pool-1-thread-2 at 1561676962200 hold: true
-        // pool-1-thread-1 at 1561676962714 hold: true
+        // pool-1-thread-1 [producer] at 1561775500363 create : a
+        // pool-1-thread-2 [consumer] at 1561775500365 create: a
+        // pool-1-thread-1 [producer] at 1561775501067 create : b
+        // ......
+        // pool-1-thread-2 [consumer] at 1561775513113 create: v
+        // pool-1-thread-1 [producer] at 1561775513260 create : w
+        // pool-1-thread-1 [producer] at 1561775513435 create : x
+        // pool-1-thread-2 [consumer] at 1561775513857 create: w
+        // pool-1-thread-1 [producer] at 1561775513969 create : y
+        // pool-1-thread-2 [consumer] at 1561775514193 create: x
+        // pool-1-thread-2 [consumer] at 1561775515071 create: y
     }
 }
-  ```
+```
+   如果发现打印顺序错乱，别忘了使用 synchronized 或者 lock/unlock 来同步代码块。
+
+#### 8.1.2 ConcurrentHashMap
+  
+  类 ConcurrentHashMap 和 HashMap 在行为上没啥区别，但无需显示同步就可以工作于多条线程的上下文。
+  
+  看个熟悉的列子：你经常需要检查一个 map 中是否包含某个特定的值，当这个值不存在的时候，将它放进 map 中；
+  
+```
+if ( !map.containsKey("key_name") ) {
+    map.put("key_name", "value_content");
+}
+```
+  乍一看没啥问题，但是放在多线程的环境中，他却不是线程安全的。
+  map.containsKey(）和 map.put() 方法之间，其他线程可能插入了这个条目，很可能会被覆盖掉。
+  为了消除这个竞态条件，你必须显示的同步这段代码
+```
+synchronized(map){
+    if ( !map.containsKey("key_name") ) {
+        map.put("key_name", "value_content");
+    }
+}
+```
+    好了，你觉得有了 synchronized 的庇护所向无敌了，但你没想到你在准备存储 value_content 的时候，
+    其他读线程也无法继续工作，只能等待，严重影响了性能。别担心，我们还有更厉害的武器，类 ConcurrentHashMap 中
+    的 putIfAbsent(), 相当于下面的代码但有更好的性能，
+```
+synchronized(map){
+    if ( !map.containsKey("key_name") ) {
+        return map.put("key_name", "value_content");
+    } else {
+        return map.get("key_name");
+    }
+}
+```   
+```
+/**
+ * ConcurrentHashMap
+ *
+ * @author neal.ma
+ * @date 2019/6/29
+ * @blog nealma.com
+ */
+public class ConcurrentHashMapThread {
+    private volatile static boolean shared = false;
+    public static void main(String[] args) {
+
+        final ConcurrentHashMap<String, String> map = new ConcurrentHashMap(1);
+        Runnable producer = () -> {
+            try {
+                String value = map.putIfAbsent("key", "value");
+                Thread.sleep(new Random().nextInt(1000));
+                System.out.println(Thread.currentThread().getName() + " [producer] " + value );
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        };
+
+        ExecutorService executorService = Executors.newFixedThreadPool(2);
+        executorService.execute(producer);
+
+        Runnable consumer = () -> {
+            String value = map.get("key");
+            System.out.println(Thread.currentThread().getName() + " [consumer] " + value );
+        };
+        int i = 0;
+        do {
+            executorService.execute(consumer);
+            i++;
+        } while (i < 10);
+
+        executorService.shutdown();
+
+        // 输出
+        // pool-1-thread-2 [consumer] value
+        // pool-1-thread-2 [consumer] value
+        // pool-1-thread-2 [consumer] value
+        // pool-1-thread-2 [consumer] value
+        // pool-1-thread-2 [consumer] value
+        // pool-1-thread-2 [consumer] value
+        // pool-1-thread-2 [consumer] value
+        // pool-1-thread-2 [consumer] value
+        // pool-1-thread-2 [consumer] value
+        // pool-1-thread-2 [consumer] value
+        // pool-1-thread-1 [producer] null
+    }
+}
+``` 
+    
 #### 7.3 条件 Condition
 
     接口 Condition 把 Object 的 wait 和 notification 方法（wait()\notify()\notifyAll()）分解到不同的条件
