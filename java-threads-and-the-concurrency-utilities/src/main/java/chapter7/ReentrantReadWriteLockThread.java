@@ -1,4 +1,4 @@
-package charpter7;
+package chapter7;
 
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
