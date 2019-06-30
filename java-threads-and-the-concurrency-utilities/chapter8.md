@@ -531,6 +531,9 @@ public class CompletionThread {
         // 使用 future.get() 获取任务的结果
         System.out.println("result2: " + future.get());
 
+        // 关闭
+        executorService.shutdown();
+        
         // 输出
         // result1: 200
         // result2: 100
