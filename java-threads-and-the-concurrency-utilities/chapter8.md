@@ -496,6 +496,8 @@ class SumTask extends RecursiveTask<Integer> {
     一个 Completion Service 就是一个 java.util.concurrent.CompletionService<V> 接口的实现，
     整合了 executor 和 BlockingQueue 功能，用于从已完成任务（消费者）结果的消费中解耦新的异步任务（生产者）的生产，V 是这个任务返回结果的类型。
     
+    FutureTask 也可以实现同样的功能，和 CompletionService 有啥区别呢？只不过 FutureTask 大部分场景下执行时间不确定，浪费资源。
+    
     CompletionService接口提供五个方法：
 
    * Future<V> submit(Callable<V> task)  提交 Callable 类型的 task；
