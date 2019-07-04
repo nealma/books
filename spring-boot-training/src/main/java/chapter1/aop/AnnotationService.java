@@ -1,4 +1,4 @@
-package chapter1;
+package chapter1.aop;
 
 import org.springframework.stereotype.Service;
 
@@ -9,8 +9,8 @@ import org.springframework.stereotype.Service;
  * @date 2019/7/4
  * @blog nealma.com
  */
-@Service("AnnocationService1")
-public class AnnocationService {
+@Service
+public class AnnotationService {
     @Action(name = "注解式拦截的 play 操作")
     public void play(){}
 }

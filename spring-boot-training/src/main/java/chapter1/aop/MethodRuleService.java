@@ -1,4 +1,4 @@
-package chapter1;
+package chapter1.aop;
 
 import org.springframework.stereotype.Service;
 

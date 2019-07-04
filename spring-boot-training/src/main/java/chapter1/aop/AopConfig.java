@@ -1,6 +1,6 @@
-package chapter1;
+package chapter1.aop;
 
-import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 
@@ -13,14 +13,7 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy;
  */
 @Configuration // 标注当前是一个配置类
 @EnableAspectJAutoProxy // 开启 Spring 对 AspectJ 的支持
+@ComponentScan("chapter1.aop")
 public class AopConfig {
-    @Bean
-    public MethodRuleService methodRuleService(){
-        return new MethodRuleService();
-    }
 
-    @Bean
-    public AnnocationService annocationService(){
-        return new AnnocationService();
-    }
 }
