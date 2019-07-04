@@ -21,7 +21,7 @@ public class RunApplication {
         methodRuleService.play();
 
         // 输出
-        // user
-        // user pay
+        // Action name: 注解式拦截的 play 操作
+        // 方法名: play
     }
 }

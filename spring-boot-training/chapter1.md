@@ -211,11 +211,106 @@ public class RunApplication {
    * @Pointcut 声明一个切点，定义拦截规则
    * 其中符合条件的每一个被拦截处为连接点（JoinPoint）
    
-   拦截方式：
-   1）基于注解
+   拦截方式
    
-   2）基于方法规则
+   * 基于注解
+   * 基于方法规则
    
+```  
+
+/**
+ * 拦截规则的注解
+ */
+@Target( { METHOD, FIELD, ANNOTATION_TYPE })
+@Retention(RUNTIME)
+public @interface Action {
+    String name();
+}
+
+/**
+ * 使用注解的被拦截类
+ */
+@Service
+public class AnnotationService {
+    @Action(name = "注解式拦截的 play 操作")
+    public void play(){}
+}
+
+/**
+ * 使用方法规则的被拦截类
+ */
+@Service
+public class MethodRuleService {
+    public void play(){}
+}
+
+**
+ * AOP 配置类
+ */
+@Configuration // 标注当前是一个配置类
+@EnableAspectJAutoProxy // 开启 Spring 对 AspectJ 的支持
+@ComponentScan("chapter1.aop")
+public class AopConfig {
+
+}
+
+/**
+ * 切面类
+ */
+@Aspect // 注解声明一个切面
+@Component // 注解成为 Spring 容器管理的 Bean
+@Slf4j
+public class LogAspect {
+
+    /**
+     * 注解声明切点
+     */
+    @Pointcut("@annotation(chapter1.aop.Action)")
+    public void annotationPointCut(){}
+
+    /**
+     * 注解声明一个建言，并使用 @PointCut 定义的切点
+     */
+    @After("annotationPointCut()")
+    public void after(JoinPoint joinPoint){
+        // 通过反射可获取注解上的属性，执行一些业务操作
+        final MethodSignature signature = (MethodSignature) joinPoint.getSignature();
+        Method method = signature.getMethod();
+        Action action = method.getAnnotation(Action.class);
+        log.info("Action name: {}", action.name());
+    }
+
+    /**
+     * 注解声明一个建言，直接使用拦截规则作为参数
+     */
+    @Before("execution(* chapter1.aop.MethodRuleService.*(..))") // 所有 chapter1.aop.MethodRuleService 包下的所有方法
+    public void before(JoinPoint joinPoint){
+        final MethodSignature signature = (MethodSignature) joinPoint.getSignature();
+        Method method = signature.getMethod();
+        log.info("方法名: {}", method.getName());
+    }
+}
+
+/**
+ * AOP 运行类
+ */
+public class RunApplication {
+    public static void main(String[] args) {
+        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(AopConfig.class);
+
+        // 2 AOP
+        AnnotationService annotationService = context.getBean(AnnotationService.class);
+        annotationService.play();
+
+        MethodRuleService methodRuleService = context.getBean(MethodRuleService.class);
+        methodRuleService.play();
+
+        // 输出
+        // Action name: 注解式拦截的 play 操作
+        // 方法名: play
+    }
+}
+```
     
     
     
