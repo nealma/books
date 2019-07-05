@@ -46,6 +46,14 @@ public class ScopeRestController {
         ISessionBean sessionBean2 = instanceService1.getISessionBean();
         log.info("sessionBean1 == sessionBean2 -> {}", sessionBean1 == sessionBean2);
 
+        // different request
+        log.info("request id: {}", instanceService1.getIRequestBean().getId());
+        log.info("request id: {}", instanceService2.getIRequestBean().getId());
+
+        // different session
+        log.info("session id: {}", instanceService1.getISessionBean().getId());
+        log.info("session id: {}", instanceService2.getISessionBean().getId());
+
         return list;
     }
 
