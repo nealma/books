@@ -1,4 +1,4 @@
-package chapter2;
+package chapter2.scope;
 
 import chapter2.scope.PrototypeService;
 import chapter2.scope.ScopeConfig;

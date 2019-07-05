@@ -1,3 +1,5 @@
+package chapter1;
+
 import chapter1.*;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
