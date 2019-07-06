@@ -57,11 +57,4 @@ public class ScopeRestController {
         return list;
     }
 
-    @GetMapping("scope")
-    public List<Integer> scope() {
-
-        List<Integer> list = Collections.emptyList();
-
-        return list;
-    }
 }
