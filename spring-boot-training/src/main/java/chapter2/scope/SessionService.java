@@ -16,12 +16,12 @@ import java.util.UUID;
  * @blog nealma.com
  */
 @Service
-//@Scope("session")
 @Scope(value=WebApplicationContext.SCOPE_SESSION, proxyMode=ScopedProxyMode.INTERFACES)
 public class SessionService implements ISessionBean{
 
     private String id = UUID.randomUUID().toString();
 
+    @Override
     public String getId(){
         return id;
     }

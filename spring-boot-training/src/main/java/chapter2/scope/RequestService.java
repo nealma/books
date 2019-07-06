@@ -16,12 +16,11 @@ import java.util.UUID;
  * @blog nealma.com
  */
 @Service
-//@Scope("request")
 @Scope(value=WebApplicationContext.SCOPE_REQUEST, proxyMode=ScopedProxyMode.INTERFACES)
 public class RequestService implements IRequestBean{
 
     private String id = UUID.randomUUID().toString();
-
+    @Override
     public String getId(){
         return id;
     }
