@@ -17,131 +17,61 @@
     所以 Bean 继承 ApplicationContextAware 可以获得 Spring 容器的所有服务。
    
 ##### 3.1.2 示例
-   **singleton、prototype、request、session**
+   **BeanNameAware、ResourceLoaderAware**
 ```
-public interface IRequestBean {
-    String getId();
-}
-
 /**
- * request scope
- * 线程级缓存
+ * aware
  */
-@Service
-@Scope(value=WebApplicationContext.SCOPE_REQUEST, proxyMode=ScopedProxyMode.INTERFACES)
-public class RequestService implements IRequestBean{
-    private String id = UUID.randomUUID().toString();
-    @Override
-    public String getId(){
-        return id;
-    }
-}
-
-public interface ISessionBean {
-    String getId();
-}
-
-/**
- * session scope
- * 会话级缓存
- */
-@Service
-@Scope(value=WebApplicationContext.SCOPE_SESSION, proxyMode=ScopedProxyMode.INTERFACES)
-public class SessionService implements ISessionBean{
-    private String id = UUID.randomUUID().toString();
-    @Override
-    public String getId(){
-        return id;
-    }
-}
-
-/**
- * singleton
- */
-@Service
-@Scope("singleton") // 可以不显示使用，Spring 默认配置
-public class SingletonService {
-
-}
-
-/**
- * prototype scope
- * 多实例
- */
-@Service
-@Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-@Data
-public class InstanceService {
-
-    @Autowired
-    private IRequestBean iRequestBean;
-
-    @Autowired
-    private ISessionBean iSessionBean;
-
-    @Autowired
-    private SingletonService singletonService;
-}
-
-/**
- * 测试Controller
- */
-@RestController
 @Slf4j
-public class ScopeRestController {
+@Service
+public class AwareService implements BeanNameAware, ResourceLoaderAware {// 获得 Bean 名称和资源加载的服务
 
-    @Autowired
-    private InstanceService instanceService1;
+    private String beanName;
+    private ResourceLoader resourceLoader;
+    /**
+     * 继承 BeanNameAware 接口，需重写 setBeanName() 方法
+     */
+    @Override
+    public void setBeanName(String beanName) {
+        this.beanName = beanName;
+    }
 
-    @Autowired
-    private InstanceService instanceService2;
+    /**
+     * 继承 ResourceLoaderAware 接口，需重写 setResourceLoader() 方法
+     */
+    @Override
+    public void setResourceLoader(ResourceLoader resourceLoader) {
+        this.resourceLoader = resourceLoader;
+    }
 
-    @GetMapping("scope/checkScope")
-    public List<Object> checkScope() {
-
-        List<Object> list = new ArrayList<>();
-
-        // prototype
-        log.info("instanceService1 == instanceService2 -> {}", instanceService1 == instanceService2);
-
-        // singleton
-        SingletonService singletonService1 = instanceService1.getSingletonService();
-        SingletonService singletonService2 = instanceService1.getSingletonService();
-        log.info("singletonService1 == singletonService2 -> {}", singletonService1 == singletonService2);
-
-        // request
-        IRequestBean requestBean1 = instanceService1.getIRequestBean();
-        IRequestBean requestBean2 = instanceService1.getIRequestBean();
-        log.info("requestBean1 == requestBean2 -> {}", requestBean1 == requestBean2);
-
-        // session
-        ISessionBean sessionBean1 = instanceService1.getISessionBean();
-        ISessionBean sessionBean2 = instanceService1.getISessionBean();
-        log.info("sessionBean1 == sessionBean2 -> {}", sessionBean1 == sessionBean2);
-
-        // 每次请求，id都是不一样的
-        log.info("request id: {}", instanceService1.getIRequestBean().getId());
-        log.info("request id: {}", instanceService2.getIRequestBean().getId());
-
-        // 每次请求，id都是一样，说明一个会话内，id不变
-        log.info("session id: {}", instanceService1.getISessionBean().getId());
-        log.info("session id: {}", instanceService2.getISessionBean().getId());
-
-        return list;
+    public void print() throws IOException {
+        log.info("beanName: {}", beanName);
+        Resource resource = resourceLoader.getResource("classpath:test.txt");
+        log.info("resource: {}", new String(FileCopyUtils.copyToByteArray(resource.getInputStream())));
     }
 }
 
 /**
- * main
+ * 配置类
  */
-@SpringBootApplication
-@ComponentScan("chapter2.rest,chapter2.scope")
-public class App {
-    public static void main(String[] args) {
-        SpringApplication.run(App.class, args);
+@Configuration
+@ComponentScan("chapter3.aware")
+public class AwareConfig {
+
+}
+/**
+ * 运行类
+ */
+public class Run {
+    public static void main(String[] args) throws IOException {
+        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(AwareConfig.class);
+        AwareService awareService = context.getBean(AwareService.class);
+        awareService.print();
+        context.close();
+        // beanName: awareService
+        // resource: yaya
     }
 }
-
 ```
 ![输出](img/scope-request-session.png)
 

@@ -17,5 +17,7 @@ public class Run {
         AwareService awareService = context.getBean(AwareService.class);
         awareService.print();
         context.close();
+        // beanName: awareService
+        // resource: yaya
     }
 }
