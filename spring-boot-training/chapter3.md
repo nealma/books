@@ -81,68 +81,86 @@ public class Run {
    使用 @Async 注解来声明其是一个异步任务。
    
 ```
-neal.ma=neal.ma
-```
 
-test.properties 
-```
-name=neal.ma
-```
-* 代码
-```
+/**
+ * task
+ */
+@Slf4j
 @Service
-@Data
-public class ElService {
-    private String name = "tina";
+public class TaskService {
+
+    /**
+     * @Async 注解表明该方法是个异步方法
+     *        如果注解在类级别，则表明该类的所有方法都是异步方法
+     * 注意开启 @EnableAsync
+     * @Async 调用中的事务处理机制
+     * 在 @Async 标注的方法，同时也适用了@Transactional进行了标注；在其调用数据库操作之时，将无法产生事务管理的控制，原因就在于其是基于异步处理的操作。
+     * 那该如何给这些操作添加事务管理呢？可以将需要事务管理操作的方法放置到异步方法内部，在内部被调用的方法上添加@Transactional.
+     * 例如：  方法A，使用了@Async/@Transactional来标注，但是无法产生事务控制的目的。
+     *        方法B，使用了@Async来标注，B中调用了C、D，C/D分别使用@Transactional做了标注，则可实现事务控制的目的。
+     */
+    @Async
+    public void one() throws InterruptedException {
+        Thread.sleep(1000);
+        log.info("-> one");
+    }
+    @Async
+    public void two() throws InterruptedException {
+        Thread.sleep(3000);
+        log.info("-> two");
+    }
+    @Async
+    public void three() throws InterruptedException {
+        Thread.sleep(2000);
+        log.info("-> three");
+    }
 }
+
 /**
  * 配置类
  */
-@Slf4j
 @Configuration
-@ComponentScan("chapter2.el")
-@PropertySource("application.properties")
-public class ElConfig {
-    // 注入普通字符串
-    @Value("normal")
-    private String normal;
+@ComponentScan("chapter3.task")
+@EnableAsync
+public class TaskConfig implements AsyncConfigurer {
+    @Override
+    public Executor getAsyncExecutor() {
+        ThreadPoolTaskExecutor threadPoolTaskExecutor = new ThreadPoolTaskExecutor();
+        threadPoolTaskExecutor.setCorePoolSize(5);
+        threadPoolTaskExecutor.setMaxPoolSize(10);
+        threadPoolTaskExecutor.setQueueCapacity(25);
+        threadPoolTaskExecutor.initialize();
+        return threadPoolTaskExecutor;
+    }
+    @Override
+    public AsyncUncaughtExceptionHandler getAsyncUncaughtExceptionHandler() {
+        return null;
+    }
+}
 
-    // 注入操作系统属性
-    @Value("#{systemProperties['os.name']}")
-    private String osName;
-
-    // 注入 表达式结果
-    @Value("#{T(java.lang.Math).random()}")
-    private double random;
-
-    // 注入其他 Bean 属性
-    @Value("#{elService.name}")
-    private String elServiceName;
-
-    // 注入文件资源
-    @Value("test.properties")
-    private Resource resourceFile;
-
-    // 注入网址资源
-    @Value("http://www.aliyun.com")
-    private Resource resourceUrl;
-
-    // 注入配置文件
-    @Value("${neal.ma}")
-    private String nealmaName;
-
-    @Autowired
-    private Environment environment;
-
-    public void print() throws IOException {
-        log.info("normal: {}", normal);
-        log.info("osName: {}", osName);
-        log.info("random: {}", random);
-        log.info("elServiceName: {}", elServiceName);
-        log.info("resourceFile: {}", FileCopyUtils.copyToByteArray(resourceFile.getInputStream()));
-        log.info("resourceUrl: {}", FileCopyUtils.copyToByteArray(resourceUrl.getInputStream()));
-        log.info("nealmaName: {}", nealmaName);
-        log.info("neal.ma: {}", environment.getProperty("neal.ma"));
+/**
+ * 运行类
+ */
+public class Run {
+    public static void main(String[] args) throws IOException, InterruptedException {
+        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(TaskConfig.class);
+        TaskService taskService = context.getBean(TaskService.class);
+        for (int i=0; i<3; i++){
+            taskService.one();
+            taskService.two();
+            taskService.three();
+        }
+        context.close();
+        // 结果是不是按照顺序执行，也就证明任务是异步执行。
+        // -> one
+        // -> one
+        // -> three
+        // -> one
+        // -> two
+        // -> three
+        // -> two
+        // -> three
+        // -> two
     }
 }
 ```
@@ -307,13 +325,18 @@ public class Run {
 }
 ```
 
-#### 3.5 事件（Application Event）
+#### 3.5 组合注解与元注解
 
-    Spring 事件提供 Bean 与 Bean 之间消息通信。比如一个 Bean 处理完一个任务之后，希望另一个 Bean 感知到并做相应的处理，
-    这个时候就需要 这个 Bean 监听另一个 Bean 发送的事件，
-   * 自定义事件，继承 ApplicationEvent
-   * 定义事件监听器，实现 ApplicationListener 
-   * 使用容器发布事件
+    Spring 2.x 开始，为了响应 JDK 1.5 推出的注解功能，Spring 开始加入大量的注解来替代 xml 配置。Spring 的注解主要用来配置和注入 Bean。
+    以及 AOP 相关配置（@Transitional）。注解类越来越多，使用繁琐，可以用元注解来组合新注解，消除样板代码（boilerplate code）。
+    
+    元注解可以理解为可以注解到其他注解的注解，感受一下元数据的定义，也可以通俗点叫组合注解，比较常用的 @Configuration 就是一个
+    组合 @Component 注解，表明其就是一个 Bean。
+    
+    作为程序猿，你会发现，我们总是需要 @Configuration 和 @ComponentScan 两个注解组合使用，同样的代码不要重复出现（DRY: Don't repeat yourself.）
+    怎么办？
+    可以自定义组合注解来避免这样的尴尬。
+    
    
 ```
 /**
