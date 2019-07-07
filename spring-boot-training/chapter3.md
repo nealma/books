@@ -152,71 +152,162 @@ public class ElConfig {
     
    Spring 通过 @Scheduled 可以支持多种类的计划任务，包含cron、fixDelay、fixRate 等。
 ```
-
-```
-#### 2.4 环境配置 Profile
-    Profile 为不同环境提供不同的配置
-   * 通过设置 Environment 的 ActiveProfiles 
-   * 通过设置 jvm 的 spring.profiles.active 参数（两种：配置文件中；命令行参数）
-```
 /**
- * Profile
+ * 定时任务
  */
-@Data
-@AllArgsConstructor
-public class ProfileService {
-    private String name;
+@Service
+@Slf4j
+public class ScheduledTaskService {
+    /**
+     * @Scheduled 声明该方法是计划任务，使用 fixedRate 属性每隔固定时间执行。
+     */
+    @Scheduled(fixedRate = 500)
+    public void printRateDateTime(){
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
+        log.info("rate[500]: {}", LocalDateTime.now().format(formatter));
+    }
+    /**
+     * @Scheduled 声明该方法是计划任务，使用 fixedDelay 属性延迟固定时间执行。
+     */
+    @Scheduled(fixedDelay = 1000)
+    public void printDelayDateTime(){
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
+        log.info("delay[1000]: {}", LocalDateTime.now().format(formatter));
+    }
+    /**
+     * @Scheduled 声明该方法是计划任务，使用 cron 属性可按照指定时间执行。
+     * cron 是UNIX 或 类 UNIX（Linux）系统下的定时任务
+     * 例子：每天 23：25 执行, 如果时间是过去时，不再执行。
+     */
+    @Scheduled(cron = "0 33 23 * * ?")
+    public void printCronDateTime(){
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
+        log.info("cron[0 33 23 ？* *]: {}", LocalDateTime.now().format(formatter));
+    }
 }
 
 /**
- * config
+ * 配置类
  */
 @Configuration
-public class ProfileConfig {
+@ComponentScan("chapter3.Scheduled")
+@EnableScheduling
+public class ScheduledTaskConfig{
 
-    @Bean
-    @Profile("test")
-    public ProfileService test(){
-        return new ProfileService("test");
+}
+
+/**
+ * 运行类
+ */
+public class Run {
+    public static void main(String[] args) {
+        new AnnotationConfigApplicationContext(ScheduledTaskConfig.class);
+        // 输出
+        // delay[1000]: 2019-07-07 23:32:57.878
+        // delay[1000]: 2019-07-07 23:32:58.884
+        // rate[500]: 2019-07-07 23:32:59.325
+        // rate[500]: 2019-07-07 23:32:59.827
+        // cron[0 33 23 ？* *]: 2019-07-07 23:33:00.003
+        // ......
     }
+}
+```
+#### 3.4 条件注解 @Conditional
+    前面我们讲过，可通过 @Profile 注解获取不同的 Bean。Spring 4.x 提供了统一的 基于条件的 Bean 的创建。即 @Conditional
+```
 
-    @Bean
-    @Profile("prod")
-    public ProfileService prod(){
-        return new ProfileService("prod");
+/**
+ * 判定 Linux 条件
+ */
+@Slf4j
+public class LinuxCondition implements Condition {
+    @Override
+    public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
+        log.info("matches Linux");
+        return context.getEnvironment().getProperty("os.name").contains("Linux");
     }
 }
 
 /**
- * main
+ * 判定 Mac 条件
  */
 @Slf4j
+public class MacCondition implements Condition {
+    @Override
+    public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
+        log.info("matches Mac OS X");
+        return context.getEnvironment().getProperty("os.name").contains("Mac OS X");
+    }
+}
+
+/**
+ * 通用接口
+ */
+public interface ListService {
+    void os();
+}
+
+/**
+ * service
+ */
+@Slf4j
+public class LinuxOSService implements ListService{
+    @Override
+    public void os(){
+       log.info("Linux");
+    }
+}
+
+/**
+ * service
+ */
+@Slf4j
+public class MacOSService implements ListService{
+    @Override
+    public void os(){
+       log.info("Mac OS X");
+    }
+}
+/**
+ * 配置类
+ */
+@Configuration
+public class ConditionConfig {
+    /**
+     * 通过 @Conditional 注解，符合 windows 条件，则实例化 WindowListService。
+     */
+    @Bean
+    @Conditional(MacCondition.class)
+    public ListService mac(){
+        return new MacOSService();
+    }
+    /**
+     * 通过 @Conditional 注解，符合 linux 条件，则实例化 LinuxListService。
+     */
+    @Bean
+    @Conditional(LinuxCondition.class)
+    public ListService linux(){
+        return new LinuxOSService();
+    }
+}
+
+/**
+ * 运行类
+ */
 public class Run {
-
     public static void main(String[] args) {
-    
-        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
-
-        // 激活 test Profile
-        context.getEnvironment().setActiveProfiles("test");
-        // 注册 Bean 配置类
-        context.register(ProfileConfig.class);
-        // 刷新容器
-        context.refresh();
-
-        ProfileService profileService = context.getBean(ProfileService.class);
-
-        log.info("name: {}", profileService.getName());
-
+        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(ConditionConfig.class);
+        ListService listService = context.getBean(ListService.class);
+        listService.os();
+        System.out.println(context.getEnvironment().getProperty("os.name"));
         context.close();
-        
-        // 输出
-        // name: test
+        // Mac OS X
+        // Mac OS X
     }
 }
 ```
 
-#### 2.5 事件（Application Event）
+#### 3.5 事件（Application Event）
 
     Spring 事件提供 Bean 与 Bean 之间消息通信。比如一个 Bean 处理完一个任务之后，希望另一个 Bean 感知到并做相应的处理，
     这个时候就需要 这个 Bean 监听另一个 Bean 发送的事件，
