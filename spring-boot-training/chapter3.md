@@ -73,13 +73,13 @@ public class Run {
     }
 }
 ```
-![输出](img/scope-request-session.png)
+#### 3.2 多线程
 
-#### 2.2 Spring EL 和 资源调用
-
-   Spring EL 是 Spring 表达式语言，支持在 xml 和 注解中使用表达式。
-   开发中经常调用各种资源的场景，包括普通文件、网址、配置文件、系统环境变量等。
-* application.properties
+   Spring 通过任务执行器（TaskExecutor）来实现多线程和并发编程。
+   使用 ThreadPoolTaskExecutor 可实现一个基于线程池的 TaskExecutor。而实际开发中任务一般是非阻碍的，
+   即异步的，所以我们要在配置类中通过 @EnableAsync 开启对异步任务的支持，并通过在实际执行的 Bean 的方法中
+   使用 @Async 注解来声明其是一个异步任务。
+   
 ```
 neal.ma=neal.ma
 ```
@@ -146,93 +146,13 @@ public class ElConfig {
     }
 }
 ```
-![结果](img/el-use.png)
+#### 3.3 Bean 计划任务
+    从 Spring 3.1 开始，计划任务在 Spring 中的实现变得异常的简单。首先通过在配置类注解 @EnableScheduling 来开启对计划任务的支持。
+    然后在要执行计划任务的方法上注解 @Scheduled ，声明这是一个计划任务。
     
-#### 2.3 Bean 的初始化和销毁
-    实际开发中，我们会遇到需要在 Bean 的使用前、后做必要操作，Spring 对 Bean 的生命周期提供操作支持。
-    
-   * Java 配置方式 （@Bean(initMethod="init", destroyMethod="destroy")）
-   * JSR-250 注解方式 （@PostConstruct、@PreDestroy）
+   Spring 通过 @Scheduled 可以支持多种类的计划任务，包含cron、fixDelay、fixRate 等。
 ```
 
-/**
- * bean
- */
-@Slf4j
-public class BeanWayService {
-    public BeanWayService() {
-        super();
-        log.info("BeanWayService construct");
-    }
-    public void init(){
-        log.info("BeanWayService init");
-    }
-    public void destroy(){
-        log.info("BeanWayService destroy");
-    }
-}
-
-/**
- * jsr-250
- */
-@Slf4j
-public class JSR250WayService {
-    public JSR250WayService() {
-        super();
-        log.info("JSR250WayService construct");
-    }
-    // 构造函数执行完之后执行
-    @PostConstruct
-    public void init(){
-        log.info("JSR250WayService init");
-    }
-
-    // 在 Bean 销毁之前执行
-    @PreDestroy
-    public void destroy(){
-        log.info("JSR250WayService destroy");
-    }
-}
-
-
-/**
- * pre post config
- */
-@Configuration
-@ComponentScan("chapter2.propost")
-public class PrePostConfig {
-    @Bean(initMethod = "init", destroyMethod = "destroy")
-    BeanWayService beanWayService(){
-        return new BeanWayService();
-    }
-    @Bean
-    JSR250WayService jsr250WayService(){
-        return new JSR250WayService();
-    }
-}
-
-/**
- * main
- */
-@Slf4j
-public class PrePostRun {
-
-    public static void main(String[] args) {
-        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(PrePostConfig.class);
-
-        BeanWayService beanWayService = context.getBean(BeanWayService.class);
-        JSR250WayService jsr250WayService = context.getBean(JSR250WayService.class);
-
-        context.close();
-        // 输出
-        // BeanWayService construct
-        // BeanWayService init
-        // JSR250WayService construct
-        // JSR250WayService init
-        // JSR250WayService destroy
-        // BeanWayService destroy
-    }
-}
 ```
 #### 2.4 环境配置 Profile
     Profile 为不同环境提供不同的配置
