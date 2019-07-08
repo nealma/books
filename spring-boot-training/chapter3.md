@@ -324,8 +324,45 @@ public class Run {
     }
 }
 ```
-
 #### 3.5 组合注解与元注解
+##### 3.5.1    
+    顺便介绍下注解知识
+   * @Retention 保留期，解释这个注解的存活时间
+            取值：
+            1. RetentionPolicy.SOURCE 只在源码阶段保留，在编译器编译时会被丢弃忽视。
+            2. RetentionPolicy.CLASS 直到编译字节码的阶段一直保留，不会被加载到 VM。
+            3. RetentionPolicy.RUNTIME 一直保留包运行时阶段，被加载到 VM，程序中可以读取。
+   * @Documented 跟文档相关，可以将注解的元素包含到 javadoc 中。
+   * @Target 标注这个元素可以在哪个地方使用
+            1. ElementType.TYPE 可以注解在 类、接口、注解、枚举
+            2. ElementType.FIELD 可以注解在 属性
+            3. ElementType.METHOD 可以注解在 方法
+            4. ElementType.PARAMETER 可以注解在 方法参数
+            5. ElementType.CONSTRUCTOR 可以注解在 构造函数
+            6. ElementType.ANNOTATION_TYPE 可以注解一个注解
+            7. ElementType.PACKAGE 可以注解在 包
+            8. ElementType.LOCAL_VARIABLE 可以注解在 局部变量
+            9. ElementType.TYPE_PARAMETER 同 PARAMETER
+            10. ElementType.TYPE_USE 同 TYPE
+   * @Inherited 继承，父类使用 @Inherited 注解，则子类会继承父类的所有注解，即使子类什么注解都没有。
+   * @Repeatable 可重复的
+      @interface Role {
+ 	        User[]  value();
+      }
+      @Repeatable(Role.class)
+      @interface User{
+ 	        String role default "";
+      }
+      @User(role="ARTIST")
+      @User(role="CODER")
+      @User(role="PM")
+      public class DaNiu{
+      }
+   *  注解的属性
+```
+
+``` 
+##### 3.5.2
 
     Spring 2.x 开始，为了响应 JDK 1.5 推出的注解功能，Spring 开始加入大量的注解来替代 xml 配置。Spring 的注解主要用来配置和注入 Bean。
     以及 AOP 相关配置（@Transitional）。注解类越来越多，使用繁琐，可以用元注解来组合新注解，消除样板代码（boilerplate code）。
@@ -336,83 +373,7 @@ public class Run {
     作为程序猿，你会发现，我们总是需要 @Configuration 和 @ComponentScan 两个注解组合使用，同样的代码不要重复出现（DRY: Don't repeat yourself.）
     怎么办？
     可以自定义组合注解来避免这样的尴尬。
-    
-   
 ```
-/**
- * event
- */
-public class MyEvent extends ApplicationEvent {
-    private String msg;
-    public MyEvent(String msg) {
-        super(msg);
-        this.msg = msg;
-    }
 
-    public String getMsg() {
-        return msg;
-    }
-
-    public void setMsg(String msg) {
-        this.msg = msg;
-    }
-}
-
-/**
- * listener
- */
-@Slf4j
-@Component
-public class MyEventListener implements ApplicationListener<MyEvent> { // 指定事件类
-
-    // 对消息进行接收处理
-    @Override
-    public void onApplicationEvent(MyEvent event) {
-        log.info("receive: {}", event.getMsg());
-    }
-}
-
-/**
- * 事件发布类
- */
-@Component
-public class MyPublisher {
-
-    @Autowired
-    private ApplicationContext applicationContext;
-
-    public void publish(MyEvent event){
-        applicationContext.publishEvent(event);
-    }
-}
-
-/**
- * config
- */
-@Configuration
-@ComponentScan("chapter2.event")
-public class EventConfig {
-
-}
-
-/**
- * main
- */
-@Slf4j
-public class Run {
-
-    public static void main(String[] args) {
-        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(EventConfig.class);
-
-        MyPublisher publisher = context.getBean(MyPublisher.class);
-
-        MyEvent event = new MyEvent("tina");
-        publisher.publish(event);
-
-        context.close();
-        // 输出
-        // receive: tina
-    }
-}
-```   
+```      
     
