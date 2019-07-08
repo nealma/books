@@ -14,5 +14,6 @@ import java.lang.annotation.*;
 @Documented
 @Repeatable(Roles.class)
 public @interface Role {
-    String  value();
+    // 注解属性，也叫成员变量，没有形参；方法名即为属性名；方法类型即为属性类型；可以使用 default 设置默认值
+    String  value() default "宙斯";
 }

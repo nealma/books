@@ -345,20 +345,68 @@ public class Run {
             9. ElementType.TYPE_PARAMETER 同 PARAMETER
             10. ElementType.TYPE_USE 同 TYPE
    * @Inherited 继承，父类使用 @Inherited 注解，则子类会继承父类的所有注解，即使子类什么注解都没有。
-   * @Repeatable 可重复的
-      @interface Role {
- 	        User[]  value();
-      }
-      @Repeatable(Role.class)
-      @interface User{
- 	        String role default "";
-      }
-      @User(role="ARTIST")
-      @User(role="CODER")
-      @User(role="PM")
-      public class DaNiu{
-      }
-   *  注解的属性
+   * @Repeatable 可重复的 可参考@Scheduled @Schedules这两个注解
+```
+/**
+ * 角色容器
+ */
+@Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE})
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+public @interface Roles {
+    Role[]  value();
+}
+
+/**
+ * 角色注解，可重复使用
+ */
+@Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE})
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+@Repeatable(Roles.class)
+public @interface Role {
+    String  value();
+}
+
+/**
+ * 重复注解 验证类
+ */
+@Slf4j
+@Component
+public class User {
+    @Role("画家")
+    @Role("艺术家")
+    @Role("哲学家")
+    public void listRoles(){
+        Method[] methods = User.class.getMethods();
+        Set<Role> roles = new HashSet<>(3);
+        for(Method method : methods){
+            log.info("listRoles method: {}", method);
+            // AnnotatedElementUtils 是 Spring 操作注解工具类
+            roles = AnnotatedElementUtils.getMergedRepeatableAnnotations(method, Role.class, Roles.class);
+            if(!CollectionUtils.isEmpty(roles)){
+                break;
+            }
+        }
+        log.info("listRoles roles: {}", roles);
+
+        roles.stream().forEach(item -> {
+            log.info(item.value());
+        });
+    }
+    public static void main(String[] args) {
+        new User().listRoles();
+        // 输出  
+        // 画家
+        // 艺术家
+        // 哲学家
+        
+    }
+}
+```      
+   * 注解的属性 也叫成员变量，没有形参；方法名即为属性名；方法类型即为属性类型；可以使用 default 设置默认值
+   * @FunctionalInterface 函数式接口。 典型的 Runable 接口，可以转换成 lambda 表达式
+   * 检测 Method.isAnnotationPresent( A.class ) 检测方法上有没有使用 A 注解
 ```
 
 ``` 
