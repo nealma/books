@@ -23,7 +23,8 @@ public class MvcConfig extends WebMvcConfigurerAdapter {
     }
 
     @Bean
-    public CustomInterceptor customInterceptor(){
+    public CustomInterceptor customInterceptor(){// 注入自定义拦截器
+
         return new CustomInterceptor();
     }
 
@@ -36,6 +37,7 @@ public class MvcConfig extends WebMvcConfigurerAdapter {
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {// 拦截器 普通 Bean 通过实现 HandlerInterceptor 接口或继承 HandlerInterceptorAdaptor 类实现自定义拦截器
+
         registry.addInterceptor(customInterceptor());
     }
 }
