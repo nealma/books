@@ -10,4 +10,5 @@ import lombok.Data;
 @AllArgsConstructor
 public class CustomBean {
     private String name;
+    private String id;
 }

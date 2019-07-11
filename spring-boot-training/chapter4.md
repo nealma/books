@@ -117,3 +117,11 @@ public class CustomRestController {
     }
 }
 ```    
+#### 4.3 @ControllerAdvice 控制器的全局配置
+
+    * @ControllerAdvice 控制器的全局配置
+    * @ExceptionHandler 控制器的全局异常处理, value 属性是过滤拦截的条件
+    * @ModelAttribute 全局对参数进行处理
+    * @InitBinder 可以实现类型转换、参数绑定和过滤
+    
+

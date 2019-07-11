@@ -12,12 +12,13 @@ import javax.servlet.http.HttpServletResponse;
  */
 @Slf4j
 public class CustomInterceptor extends HandlerInterceptorAdapter {
+    // 请求发生前
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         log.info("preHandle");
         return super.preHandle(request, response, handler);
     }
-
+    // 请求发生后
     @Override
     public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler, ModelAndView modelAndView) throws Exception {
         log.info("postHandle");
