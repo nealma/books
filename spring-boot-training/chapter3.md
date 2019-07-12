@@ -421,7 +421,80 @@ public class User {
     作为程序猿，你会发现，我们总是需要 @Configuration 和 @ComponentScan 两个注解组合使用，同样的代码不要重复出现（DRY: Don't repeat yourself.）
     怎么办？
     可以自定义组合注解来避免这样的尴尬。
-```
+    
+#### 3.6 自动配置
 
-```      
+##### 3.6.1 直接导入配置类 Import
+
+  例：@EnableScheduling 中 @Import(SchedulingConfiguration.class)
+    
+##### 3.6.2 依据条件选择配置类 Import
+
+  例：@EnableAsync 中 @Import(AsyncConfigurationSelector.class)，AsyncConfigurationSelector 根接口为 ImportSelector，需重写 selectImports() 方法。
+
+##### 3.6.3 动态注册 Bean
+
+  例：@EnableAspectJAutoProxy 中 @Import(AspectJAutoProxyRegistrar.class)
+
+    AspectJAutoProxyRegistrar 实现了 ImportBeanDefinitionRegistrar 接口，ImportBeanDefinitionRegistrar能够在运行时自动添加 Bean 到已有的配置类。
+    需要重写方法：
+    registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry)
+   * AnnotationMetadata 获得当前配置类上的注解 
+   * BeanDefinitionRegistry 用来注册 Bean
+
+#### 3.7 测试
+
+    Spring 提供了一个 SpringJUnit4ClassRunner 类，它提供了 Spring TextContext Framework 功能。
+    通过 @ContextConfiguration 来配置 ApplicationContext。 通过 @ActiveProfiles 确定活动的 Profile。
+```
+public class TestBean {
+    private String content;
+
+    public TestBean(String content) {
+        this.content = content;
+    }
+
+    public String getContent() {
+        return content;
+    }
+
+    public void setContent(String content) {
+        this.content = content;
+    }
+}
+
+public class TestConfig {
+
+    @Bean
+    @Profile("dev")
+    public TestBean dev(){
+        return new TestBean("dev");
+    }
+    @Bean
+    @Profile("test")
+    public TestBean test(){
+        return new TestBean("test");
+    }
+    @Bean
+    @Profile("prod")
+    public TestBean prod(){
+        return new TestBean("prod");
+    }
+}
+
+@RunWith(SpringJUnit4ClassRunner.class) // 在 Junit 环境下，提供 Spring TestContext Framework 的功能。
+@ContextConfiguration(classes = TestConfig.class) // 用来加载配置 ApplicationContext，classes 用来加载配置类
+@ActiveProfiles("dev") // 用来声明活动的 Profile
+public class TestBeanTest {
+    @Autowired
+    private TestBean bean;
+
+    @Test
+    public void devInject() {
+        // 通过 JUnit 的 Assert 来校验结果是否和预期一样
+        Assert.assertEquals("dev", bean.getContent());
+    }
+
+}
+```    
     
