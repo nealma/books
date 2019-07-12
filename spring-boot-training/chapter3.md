@@ -403,7 +403,7 @@ public class User {
         
     }
 }
-```      
+```
    * 注解的属性 也叫成员变量，没有形参；方法名即为属性名；方法类型即为属性类型；可以使用 default 设置默认值
    * @FunctionalInterface 函数式接口。 典型的 Runable 接口，可以转换成 lambda 表达式
    * 检测 Method.isAnnotationPresent( A.class ) 检测方法上有没有使用 A 注解
