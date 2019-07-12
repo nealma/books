@@ -11,4 +11,5 @@ import lombok.Data;
 public class CustomBean {
     private String name;
     private String id;
+    private String gender;
 }

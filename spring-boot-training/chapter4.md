@@ -123,5 +123,88 @@ public class CustomRestController {
     * @ExceptionHandler 控制器的全局异常处理, value 属性是过滤拦截的条件
     * @ModelAttribute 全局对参数进行处理
     * @InitBinder 可以实现类型转换、参数绑定和过滤
-    
+```
+
+/**
+ * 自定义 Bean
+ */
+@Data
+@AllArgsConstructor
+public class CustomBean {
+    private String name;
+    private String id;
+    private String gender;
+}
+
+@ControllerAdvice // 控制器建言，实际是一个 @Component 组合注解
+@Slf4j
+public class GlobalExceptionHandler {
+
+    // 全局异常处理
+    @ExceptionHandler(Exception.class)
+    public ModelAndView exception(Exception exception, WebRequest request){
+        ModelAndView modelAndView = new ModelAndView("error");// error 页面
+        modelAndView.addObject("errorMsg", exception.getMessage());
+        return modelAndView;
+    }
+
+    @ModelAttribute // 将键值对添加到全局，所有 @RequestMapping 的方法可以获取到该键值对, 每次请求都会经过该方法
+    public void addAttributes(Model model){
+        model.addAttribute("msg", "other message");
+        log.info("global model: {}", model);
+        // 输出
+        // global model: {msg=other message}
+    }
+
+    // 每一次 request
+    @InitBinder("a") // 定制 WebDataBinder,
+    public void initBinder(WebDataBinder webDataBinder){
+        log.info("Global initBinder: {}", webDataBinder.getAllowedFields());
+        webDataBinder.setFieldDefaultPrefix("a.");
+        webDataBinder.setBindEmptyMultipartFiles(true);
+        webDataBinder.setFieldMarkerPrefix("");
+        webDataBinder.setDisallowedFields("id"); // 忽略 request 请求中 id 参数，貌似不起作用，待后期研究
+
+        // 时间格式转换
+        DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        CustomDateEditor dateEditor = new CustomDateEditor(df, true);
+        webDataBinder.registerCustomEditor(Date.class,dateEditor);
+    }
+}
+
+
+/**
+ * 测试 controller
+ */
+@RestController
+@Slf4j
+public class CustomRestController {
+    // 只针对当前 Controller
+    @InitBinder("a")
+    public void initBinder(WebDataBinder webDataBinder){
+        // 让name属性无法被接收
+        log.info("CustomRestController initBinder: {}", webDataBinder.getAllowedFields());
+        webDataBinder.setDisallowedFields("name");
+    }
+    @GetMapping(value = "/error")
+    public String error(){
+        return "failed";
+    }
+    @GetMapping(value = "/get", produces = "application/xml;charset=UTF-8")// 需引入依赖 jackson-dataformat-xml
+    public CustomBean get(){
+        return new CustomBean("web", "id", "gender");
+    }
+    @GetMapping(value = "/advice")
+    public CustomBean advice(CustomBean customBean){
+        int i = 0;
+        int j = i/i;
+        return customBean;
+    }
+    @GetMapping(value = "/disallowId", produces = "application/json;charset=UTF-8")
+    public CustomBean disallowId(@ModelAttribute("a") CustomBean customBean){
+        return customBean;
+    }
+
+}
+```    
 

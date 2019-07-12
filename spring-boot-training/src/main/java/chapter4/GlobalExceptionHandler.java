@@ -3,7 +3,6 @@ package chapter4;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.propertyeditors.CustomDateEditor;
 import org.springframework.ui.Model;
-import org.springframework.validation.DataBinder;
 import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -20,6 +19,7 @@ import java.util.Date;
 @Slf4j
 public class GlobalExceptionHandler {
 
+    // 全局异常处理
     @ExceptionHandler(Exception.class)
     public ModelAndView exception(Exception exception, WebRequest request){
         ModelAndView modelAndView = new ModelAndView("error");// error 页面
@@ -35,11 +35,14 @@ public class GlobalExceptionHandler {
         // global model: {msg=other message}
     }
 
-    @InitBinder // 定制 WebDataBinder
-    public void initBinder(DataBinder webDataBinder){
-        log.info("initBinder: {}", webDataBinder.getAllowedFields());
-        webDataBinder.setDisallowedFields("name"); // 忽略 request 请求中 id 参数
-        webDataBinder.setDisallowedFields("id"); // 忽略 request 请求中 id 参数
+    // 每一次 request
+    @InitBinder("a") // 定制 WebDataBinder,
+    public void initBinder(WebDataBinder webDataBinder){
+        log.info("Global initBinder: {}", webDataBinder.getAllowedFields());
+        webDataBinder.setFieldDefaultPrefix("a.");
+        webDataBinder.setBindEmptyMultipartFiles(true);
+        webDataBinder.setFieldMarkerPrefix("");
+        webDataBinder.setDisallowedFields("id"); // 忽略 request 请求中 id 参数，貌似不起作用，待后期研究
 
         // 时间格式转换
         DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
