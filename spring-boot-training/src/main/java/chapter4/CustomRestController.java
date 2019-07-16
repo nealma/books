@@ -39,4 +39,9 @@ public class CustomRestController {
         return customBean;
     }
 
+    @GetMapping(value = "/a.txt")
+    public String suffix(){
+        return "ok";
+    }
+
 }

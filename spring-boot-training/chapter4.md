@@ -208,3 +208,93 @@ public class CustomRestController {
 }
 ```    
 
+#### 4.4 路径匹配参数配置
+
+    在 Spring MVC 中，路径参数如果带"."的话，"."后面的参数值将被忽略。
+    例如，你访问 http://localhost:8080/mvc/a.txt, ".txt"将被忽略。
+    通过重写 configurePathMatch 方法可不忽略 "." 后面的参数 
+```
+/**
+ * 解决普通文件自动匹配问题（微信验证的时候用 MP_verify_7cUlmB08NpoIPlNw.txt）
+ * favorPathExtension 表示支持后缀匹配, false 取消后缀匹配
+ */
+
+@Override
+public void configurePathMatch(PathMatchConfigurer configurer) {
+    configurer.setUseSuffixPatternMatch(false);
+}
+
+
+@Override
+public void configureContentNegotiation(ContentNegotiationConfigurer configurer) {
+    configurer.favorPathExtension(false);
+}
+``` 
+   
+#### 4.5 文件上传
+
+    在 Spring MVC 中，通过配置 MultipartResolver 来上传文件。
+    在控制器中，通过 MultipartFile file 来接收一个文件，通过 MultipartFile[] files 来接收多个文件，
+```
+FileUtils.writeByteArrayToFile() 存储到磁盘
+```    
+
+#### 4.6  自定义 HttpMessageConverter 
+
+    HttpMessageConverter 是用来处理 request 和 response 里的数据的。 Spring 为我们内置了大量的 HttpMessageConverter。
+    例如：MappingJackson2HttpMessageConverter、StringHttpMessageConverter 等。
+```
+
+/**
+ * 自定义消息转换器
+ */
+public class MyMessageConverter extends AbstractHttpMessageConverter<CustomBean> {// 继承 AbstractHttpMessageConverter，实现自定义
+
+    public MyMessageConverter() {
+        // 新建一个自定义媒体类型 application/x-nealma-1
+        super(new MediaType("application", "x-nealma", Charset.forName("UTF-8")));
+    }
+
+    @Override
+    protected boolean supports(Class<?> aClass) {
+        return CustomBean.class.isAssignableFrom(aClass); // 表面只处理 CustomBean 这个类
+    }
+
+    /**
+     * 重写 readInternal() 方法，处理请求的数据
+     */
+    @Override
+    protected CustomBean readInternal(Class<? extends CustomBean> aClass, HttpInputMessage httpInputMessage) throws IOException, HttpMessageNotReadableException {
+        String temp = StreamUtils.copyToString(httpInputMessage.getBody(), Charset.forName("UTF-8"));
+        String[] split = temp.split("-");
+        return new CustomBean(split[0], split[1], split[2]);
+    }
+
+    /**
+     * 重写 writeInternal() 方法，处理如何输出数据到 response 中
+     */
+    @Override
+    protected void writeInternal(CustomBean customBean, HttpOutputMessage httpOutputMessage) throws IOException, HttpMessageNotWritableException {
+        httpOutputMessage.getBody().write((customBean.getId() + customBean.getName() + customBean.getGender()).getBytes());
+    }
+}
+
+/**
+ * 测试 controller
+ */
+@RestController
+@Slf4j
+public class ConvertRestController {
+    @PostMapping(value = "/convert", produces = "application/x-nealma;charset=UTF-8")
+    public @ResponseBody CustomBean convert(@RequestBody CustomBean customBean){
+        return customBean;
+    }
+}
+
+```
+
+```
+# 请求
+curl -XPOST -i 'http://localhost:8080/convert' -d'1-2-3' -H 'Content-Type: application/x-nealma;charset=UTF-8'
+```
+
