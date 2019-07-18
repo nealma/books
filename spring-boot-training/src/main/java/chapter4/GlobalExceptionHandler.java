@@ -45,8 +45,8 @@ public class GlobalExceptionHandler {
         webDataBinder.setDisallowedFields("id"); // 忽略 request 请求中 id 参数，貌似不起作用，待后期研究
 
         // 时间格式转换
-        DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        CustomDateEditor dateEditor = new CustomDateEditor(df, true);
-        webDataBinder.registerCustomEditor(Date.class,dateEditor);
+//        DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+//        CustomDateEditor dateEditor = new CustomDateEditor(df, true);
+//        webDataBinder.registerCustomEditor(Date.class,dateEditor);
     }
 }
