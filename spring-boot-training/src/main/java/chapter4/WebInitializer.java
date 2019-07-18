@@ -1,6 +1,5 @@
 package chapter4;
 
-import org.springframework.stereotype.Component;
 import org.springframework.web.WebApplicationInitializer;
 import org.springframework.web.context.support.AnnotationConfigWebApplicationContext;
 import org.springframework.web.servlet.DispatcherServlet;
@@ -12,7 +11,7 @@ import javax.servlet.ServletRegistration;
 /**
  * Web 容器初始化
  */
-@Component
+//@Component
 public class WebInitializer implements WebApplicationInitializer {// WebApplicationInitializer 是 Spring 提供的用来配置 servlet3.0 + 配置的接口
     @Override
     public void onStartup(ServletContext servletContext) throws ServletException {
