@@ -105,3 +105,32 @@ public class HttpEncodingAutoConfiguration {
 }
 
 ```
+
+#### 实战 hello starter pom
+
+* 新建一个 maven 项目
+
+* pom.xml 中 引入 spring-boot-autoconfigure 依赖
+
+* 新建 HelloProperties.java
+
+* 新建 HelloService.java
+
+* 新建 HelloServiceConfiguration.java
+
+* 在 src/main/resource 下 新建 META-INF/spring.factories 文件, 若有多个自动配置，用","隔开，"\"表示换行
+
+```
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+com.nealma.hello.HelloServiceAutoConfiguration
+```
+
+* 使用 starter 
+新建项目，引入 maven 依赖
+```
+<dependency>
+    <groupId>com.nealma</groupId>
+    <artifactId>spring-boot-starter-hello</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+</dependency>
+```
