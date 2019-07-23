@@ -1,4 +1,4 @@
-### 5 Spring Boot 运行原理
+### 6 Spring Boot 运行原理
 SpringBoot 基于条件来配置 Bean
 
 #### 查看已启用和未启用的自动配置的报告
@@ -110,14 +110,58 @@ public class HttpEncodingAutoConfiguration {
 
 * 新建一个 maven 项目
 
+![](img/new-maven-hello.png)
+
 * pom.xml 中 引入 spring-boot-autoconfigure 依赖
+![](img/pom.png)
+
+* 项目结构
+![](img/project.png)
 
 * 新建 HelloProperties.java
+```
+@ConfigurationProperties(prefix = "hello")
+@Data
+public class HelloProperties {
+    public static final String  MSG = "world";
 
+    private String msg = MSG; // 在 spring.factories 中，获取 hello.msg 的值
+}
+
+```
 * 新建 HelloService.java
+```
+@Data
+public class HelloService {
 
+    private String msg;
+
+    public String sayHello(){
+        return msg;
+    }
+
+}
+```
 * 新建 HelloServiceConfiguration.java
+```
+@Configuration
+@EnableConfigurationProperties(HelloProperties.class)
+@ConditionalOnClass(HelloService.class)
+@ConditionalOnProperty(prefix = "hello", value = "enabled", matchIfMissing = true)
+public class HelloServiceAutoConfiguration {
 
+    @Autowired
+    private HelloProperties helloProperties;
+
+    @Bean
+    @ConditionalOnMissingBean(HelloService.class)
+    public HelloService helloService() {
+        HelloService helloService = new HelloService();
+        helloService.setMsg(helloProperties.getMsg());
+        return helloService;
+    }
+}
+```
 * 在 src/main/resource 下 新建 META-INF/spring.factories 文件, 若有多个自动配置，用","隔开，"\"表示换行
 
 ```
@@ -134,3 +178,30 @@ com.nealma.hello.HelloServiceAutoConfiguration
     <version>0.0.1-SNAPSHOT</version>
 </dependency>
 ```
+* 测试
+在 application.properties 文件中添加
+```
+hello.msg=tina
+```
+测试类
+```
+@SpringBootApplication
+@RestController
+public class Run6 {
+
+    @Autowired
+    private HelloService helloService;
+
+    @GetMapping("/hello")
+    public String hello(){
+        return helloService.sayHello();
+    }
+
+    public static void main(String[] args) {
+        SpringApplication application = new SpringApplication(Run6.class);
+        application.setBannerMode(Banner.Mode.OFF); // 关闭 banner
+        application.run(args);
+    }
+}
+```
+输出：tina

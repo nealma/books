@@ -16,6 +16,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 @ActiveProfiles("dev") // 用来声明活动的 Profile
 @Slf4j
 public class TestBeanTest {
+
     @Autowired
     private TestBean bean;
 
