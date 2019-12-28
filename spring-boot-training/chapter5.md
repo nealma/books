@@ -148,3 +148,22 @@ Positive matches:
 Unconditional classes:
 ----------------------
 ``` 
+=======
+#### 日志配置
+
+SpringBoot 支持 Java Util Logging、Log4J、Log4J2、和 Logback最为日志框架，无论使用哪种框架，SpringBoot 已为当前使用日志框架的控制台输出及文件输出做好了配置。
+
+* 配置级别
+```
+logging.level=com.xxx.yyy=DEBUG
+
+* 配置文件
+```
+logging.file=/user/home/xxx/logs 
+```
+
+#### Profile 配置
+
+Profile 是 Spring 用来针对不同的环境对不同的配置提供的支持，全局 Profile 配置使用 application-{profile}.properties
+
+通过在 application.properties 中设置 spring.profiles.active=prod 来指定活动的 Profile。

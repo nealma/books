@@ -30,6 +30,13 @@
     </properties>
     <dependencies>
         <dependency>
+            <groupId>com.nealma</groupId>
+            <artifactId>spring-boot-starter-hello</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+            <scope>system</scope>
+            <systemPath>/Users/edz/.m2/repository/com/nealma/spring-boot-starter-hello/0.0.1-SNAPSHOT/spring-boot-starter-hello-0.0.1-SNAPSHOT.jar</systemPath>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
