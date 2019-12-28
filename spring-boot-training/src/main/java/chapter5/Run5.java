@@ -1,14 +1,13 @@
-package chapter4;
+package chapter5;
 
 import org.springframework.boot.Banner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 
-@SpringBootApplication(exclude = {DataSourceAutoConfiguration.class})
-public class Run {
+@SpringBootApplication
+public class Run5 {
     public static void main(String[] args) {
-        SpringApplication application = new SpringApplication(Run.class);
+        SpringApplication application = new SpringApplication(Run5.class);
         application.setBannerMode(Banner.Mode.OFF); // 关闭 banner
         application.run(args);
     }

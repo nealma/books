@@ -87,7 +87,7 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
-                    <mainClass>chapter2.App</mainClass>
+                    <mainClass>chapter2.Run2</mainClass>
                 </configuration>
             </plugin>
         </plugins>

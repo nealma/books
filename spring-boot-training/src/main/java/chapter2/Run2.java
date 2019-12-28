@@ -8,9 +8,9 @@ import org.springframework.scheduling.annotation.EnableAsync;
 @SpringBootApplication
 @ComponentScan("chapter2.rest,chapter2.scope,chapter2.async")
 @EnableAsync
-public class App {
+public class Run2 {
     public static void main(String[] args) {
-        SpringApplication.run(App.class, args);
+        SpringApplication.run(Run2.class, args);
     }
 
 }
